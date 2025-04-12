@@ -25,10 +25,25 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "allowedHosts": [
+        "poserdungeon.myddns.me"
+      ]
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "18.0"
+          },
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
