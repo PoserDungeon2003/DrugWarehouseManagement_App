@@ -5,55 +5,32 @@ import { Text, TextInput as Input, Button } from "react-native-paper";
 import { yupResolver } from '@hookform/resolvers/yup';
 import { object, string, InferType } from 'yup';
 import { Controller, useForm } from "react-hook-form";
-import theme from "@/core/theme";
-import api from "@/api";
-import { LoginResponse } from "@/types";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from "expo-router";
+import theme from "./core/theme";
 
 type LoginScreenProps = {
   navigation: any;
 }
 
 const schema = object({
-  username: string().required('Tên người dùng là bắt buộc'),
+  userName: string().required('Tên người dùng là bắt buộc'),
   password: string().required('Mật khẩu là bắt buộc'),
 })
 
 type LoginType = InferType<typeof schema>;
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { handleSubmit, control, setError, formState: { errors, isLoading } } = useForm<LoginType>({
+  const { handleSubmit, control, formState: { errors } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
     defaultValues: {
-      username: '',
+      userName: '',
       password: '',
     }
   })
 
-  const onSubmit = async (data: LoginType) => {
-    try {
-      const { token, refreshToken, role } = await api.post('/api/Account/login', data, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }) as LoginResponse
-      if (token) {
-        await AsyncStorage.multiSet([
-          ['token', token],
-          ['refreshToken', refreshToken],
-          ['role', role],
-        ])
-
-        router.push('/')
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError('root', {
-        message: error?.response?.data?.message || 'Đăng nhập không thành công',
-      })
-    }
+  const onSubmit = (data: LoginType) => {
+    console.log(data)
+    // Perform login logic here
   }
 
   return (
@@ -72,15 +49,15 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       <View>
         <Controller
           control={control}
-          name="username"
+          name="userName"
           render={({ field: { onChange, value } }) => (
             <TextInput
               label="Tên người dùng"
               returnKeyType="next"
               value={value}
               onChangeText={onChange}
-              error={!!errors.username}
-              errorText={errors.username?.message}
+              error={!!errors.userName}
+              errorText={errors.userName?.message}
               autoCapitalize="none"
               textContentType="username"
             />
@@ -101,16 +78,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             />
           )}
         />
-        <Text>
-          {errors.root && (
-            <Text style={loginStyles.error}>{errors.root.message}</Text>
-          )}
-        </Text>
         <Button
           style={buttonStyles.button}
           labelStyle={buttonStyles.text}
           mode="contained"
-          loading={isLoading}
           onPress={handleSubmit(onSubmit)}
         >
           Login
@@ -152,12 +123,6 @@ const loginStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
-  error: {
-    fontSize: 13,
-    color: theme.colors.error,
-    paddingTop: 8,
-    fontWeight: 'bold',
-  }
 })
 
 type TextInputProps = {
@@ -174,8 +139,6 @@ const TextInput = ({ errorText, description, ...props }: TextInputProps) => {
         selectionColor={theme.colors.primary}
         underlineColor="transparent"
         mode="outlined"
-        outlineColor={theme.colors.primary}
-        activeOutlineColor={theme.colors.primary}
         {...props}
       />
       {description && !errorText ? (
