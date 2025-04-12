@@ -8,21 +8,18 @@ import { Controller, useForm } from "react-hook-form";
 import { LoginResponse } from "@/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
-import api from "@/api";
 import theme from "@/theme";
-
-type LoginScreenProps = {
-  navigation: any;
-}
+import api from "@/api";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
 
 const schema = object({
   username: string().required('Tên người dùng là bắt buộc'),
   password: string().required('Mật khẩu là bắt buộc'),
 })
 
-type LoginType = InferType<typeof schema>;
+export type LoginType = InferType<typeof schema>;
 
-export default function LoginScreen({ navigation }: LoginScreenProps) {
+export default function LoginScreen() {
   const { handleSubmit, control, setError, formState: { errors, isLoading } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
@@ -41,8 +38,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       }) as LoginResponse
       if (token) {
         await AsyncStorage.multiSet([
-          ['token', token],
-          ['refreshToken', refreshToken],
+          [ACCESS_TOKEN_KEY, token],
+          [REFRESH_TOKEN_KEY, refreshToken],
           ['role', role],
         ])
 
@@ -113,7 +110,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           loading={isLoading}
           onPress={handleSubmit(onSubmit)}
         >
-          Login
+          Đăng nhập
         </Button>
       </View>
     </Background>
