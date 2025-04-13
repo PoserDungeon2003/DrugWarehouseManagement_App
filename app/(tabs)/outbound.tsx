@@ -1,0 +1,124 @@
+import { OutboundStatus } from "@/common/enum";
+import { useGetOutbound } from "@/hooks/useOutbound";
+import { useGetUser } from "@/hooks/useUser";
+import { format } from "date-fns";
+import _ from "lodash";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { DataTable, Text } from "react-native-paper";
+
+export default function Outbound() {
+  const [page, setPage] = useState<number>(0);
+  const [numberOfItemsPerPageList] = useState([2, 3, 4, 10]);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
+  const user = useGetUser();
+  const token = user?.data?.[0][1];
+  const { data, isLoading, isError, error } = useGetOutbound(token || "", {
+    page: page + 1,
+    pageSize: itemsPerPage,
+    status: "1",
+  });
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleItemsPerPageChange = (newPageSize: number) => {
+    setItemsPerPage(newPageSize);
+    setPage(0);
+  };
+
+  const from = page * itemsPerPage;
+  const to = Math.min((page + 1) * itemsPerPage, data?.items.length || 0);
+
+  const filteredData = useMemo(() => {
+    return _(data?.items)
+      .value();
+  }, [data?.items]);
+
+  if (isLoading) {
+    return (
+      <View>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    )
+  }
+
+  return (
+    <View style={{
+      flex: 1,
+      overflowY: 'auto',
+    }}>
+      <DataTable>
+        <DataTable.Header>
+          <DataTable.Title>Code</DataTable.Title>
+          <DataTable.Title>Ngày xuất</DataTable.Title>
+          <DataTable.Title numeric>Trạng thái</DataTable.Title>
+        </DataTable.Header>
+
+        {_.map(filteredData, (item, index) => (
+          <DataTable.Row key={index} onPress={() => console.log(item)}>
+            <DataTable.Cell>{item.outboundCode}</DataTable.Cell>
+            <DataTable.Cell>{format(item.outboundDate, "dd/MM/yyyy H:m:s")}</DataTable.Cell>
+            <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
+              <View style={{
+                backgroundColor: getStatusColor(item.status),
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 4,
+              }}>
+                <Text style={{ color: 'white' }}>{getStatusText(item.status)}</Text>
+              </View>
+            </DataTable.Cell>
+          </DataTable.Row>
+        ))}
+
+        <DataTable.Pagination
+          page={page}
+          numberOfPages={data?.totalPages || 0}
+          onPageChange={handlePageChange}
+          label={`${from + 1}-${to} of ${data?.totalPages}`}
+          numberOfItemsPerPageList={numberOfItemsPerPageList}
+          numberOfItemsPerPage={itemsPerPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          selectPageDropdownLabel={'Rows per page'}
+        />
+      </DataTable>
+    </View>
+  );
+}
+
+function getStatusText(status: number): string {
+  switch (status) {
+    case OutboundStatus.Pending:
+      return 'Đang chờ';
+    case OutboundStatus.InProgress:
+      return 'Đang xử lý';
+    case OutboundStatus.Cancelled:
+      return 'Đã hủy';
+    case OutboundStatus.Completed:
+      return 'Hoàn thành';
+    case OutboundStatus.Returned:
+      return 'Đã trả lại';
+    default:
+      return 'Không xác định';
+  }
+}
+
+function getStatusColor(status: number): string {
+  switch (status) {
+    case OutboundStatus.Pending:
+      return '#FF9800'; // Orange
+    case OutboundStatus.InProgress:
+      return '#2196F3'; // Blue
+    case OutboundStatus.Cancelled:
+      return '#F44336'; // Red
+    case OutboundStatus.Completed:
+      return '#4CAF50'; // Green
+    case OutboundStatus.Returned:
+      return '#9C27B0'; // Purple
+    default:
+      return '#9E9E9E'; // Gray
+  }
+}

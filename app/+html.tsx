@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScrollViewStyleReset } from 'expo-router/html';
-import { useState } from 'react';
 
 // This file is web-only and used to configure the root HTML for every
 // web page during static rendering.
@@ -32,21 +30,10 @@ const App = ({ children }: { children: React.ReactNode }) => {
 }
 
 export default function Root({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => {
-    return new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 1000 * 60 * 1, // 1 minutes
-        },
-      },
-    });
-  })
   return (
-    <QueryClientProvider client={queryClient}>
-      <App>
-        {children}
-      </App>
-    </QueryClientProvider>
+    <App>
+      {children}
+    </App>
   );
 }
 

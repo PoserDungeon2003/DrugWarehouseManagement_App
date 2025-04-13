@@ -1,4 +1,4 @@
-import { clearTokens, getRefreshToken, saveTokens } from '@/auth/authStorage';
+import { clearTokens, getRefreshToken, saveAccessToken, saveTokens } from '@/auth/authStorage';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { router } from 'expo-router';
 
@@ -50,12 +50,12 @@ apiClient.interceptors.response.use(
 
       try {
         const refreshToken = await getRefreshToken();
-        const response = await apiClient.post('/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefresh } = response.data;
+        const response = await apiClient.post('/api/Account/refreshToken', { refreshToken });
+        const { token } = response.data;
 
-        await saveTokens(accessToken, newRefresh);
-        processQueue(null, accessToken);
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        await saveAccessToken(token);
+        processQueue(null, token);
+        originalRequest.headers.Authorization = `Bearer ${token}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
