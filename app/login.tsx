@@ -11,6 +11,7 @@ import { router } from "expo-router";
 import theme from "@/theme";
 import api from "@/api";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
+import { useQueryClient } from "@tanstack/react-query";
 
 const schema = object({
   username: string().required('Tên người dùng là bắt buộc'),
@@ -20,6 +21,7 @@ const schema = object({
 export type LoginType = InferType<typeof schema>;
 
 export default function LoginScreen() {
+  const queryClient = useQueryClient();
   const { handleSubmit, control, setError, formState: { errors, isLoading } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
@@ -42,7 +44,7 @@ export default function LoginScreen() {
           [REFRESH_TOKEN_KEY, refreshToken],
           ['role', role],
         ])
-
+        queryClient.resetQueries();
         router.push('/')
       }
     } catch (error: any) {

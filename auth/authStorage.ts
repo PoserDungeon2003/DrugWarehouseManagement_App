@@ -10,6 +10,10 @@ export const saveTokens = async (accessToken: string, refreshToken: string) => {
   ]);
 };
 
+export const saveAccessToken = async (accessToken: string) => {
+  await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+}
+
 export const getAccessToken = async (): Promise<string | null> => {
   return await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
 };
