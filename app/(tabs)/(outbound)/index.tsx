@@ -2,9 +2,10 @@ import { OutboundStatus } from "@/common/enum";
 import { useGetOutbound } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
+import { router } from "expo-router";
 import _ from "lodash";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { DataTable, Text } from "react-native-paper";
 
 export default function Outbound() {
@@ -46,21 +47,20 @@ export default function Outbound() {
   }
 
   return (
-    <View style={{
-      flex: 1,
-      overflowY: 'auto',
-    }}>
+    <ScrollView>
       <DataTable>
         <DataTable.Header>
-          <DataTable.Title>Code</DataTable.Title>
-          <DataTable.Title>Ngày xuất</DataTable.Title>
+          <DataTable.Title style={{ flex: 0.3 }}>ID</DataTable.Title>
+          <DataTable.Title style={{ flex: 1, justifyContent: 'flex-start' }}>Ngày tạo đơn</DataTable.Title>
           <DataTable.Title numeric>Trạng thái</DataTable.Title>
         </DataTable.Header>
 
         {_.map(filteredData, (item, index) => (
-          <DataTable.Row key={index} onPress={() => console.log(item)}>
-            <DataTable.Cell>{item.outboundCode}</DataTable.Cell>
-            <DataTable.Cell>{format(item.outboundDate, "dd/MM/yyyy H:m:s")}</DataTable.Cell>
+          <DataTable.Row key={index} onPress={() => router.push(`/outbound-details/${item.outboundId}`)}>
+            <DataTable.Cell style={{ flex: 0.3 }}>{item.outboundId}</DataTable.Cell>
+            <DataTable.Cell style={{ flex: 1, justifyContent: 'flex-start' }}>
+              {format(new Date(item.outboundDate), "dd/MM/yyyy HH:mm:ss")}
+            </DataTable.Cell>
             <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
               <View style={{
                 backgroundColor: getStatusColor(item.status),
@@ -85,7 +85,7 @@ export default function Outbound() {
           selectPageDropdownLabel={'Rows per page'}
         />
       </DataTable>
-    </View>
+    </ScrollView>
   );
 }
 

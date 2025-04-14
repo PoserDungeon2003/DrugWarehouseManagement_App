@@ -48,7 +48,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="outbound"
+        name="(outbound)/index"
         options={{
           title: 'Xuất kho',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,

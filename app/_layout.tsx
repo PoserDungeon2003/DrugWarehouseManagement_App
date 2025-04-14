@@ -81,6 +81,9 @@ function RootLayoutNav() {
           <Stack.Screen name='profile' options={{
             title: 'Thông tin cá nhân',
           }} />
+          <Stack.Screen name='outbound-details/[id]' options={{
+            title: 'Chi tiết phiếu xuất',
+          }} />
         </Stack>
       </PaperProvider>
     </ThemeProvider >
