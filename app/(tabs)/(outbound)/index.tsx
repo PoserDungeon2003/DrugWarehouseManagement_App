@@ -1,3 +1,4 @@
+import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
 import { OutboundStatus } from "@/common/enum";
 import { useGetOutbound } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
@@ -18,7 +19,6 @@ export default function Outbound() {
   const { data, isLoading, isError, error } = useGetOutbound(token || "", {
     page: page + 1,
     pageSize: itemsPerPage,
-    status: "1",
   });
 
   const handlePageChange = (newPage: number) => {
@@ -63,12 +63,12 @@ export default function Outbound() {
             </DataTable.Cell>
             <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
               <View style={{
-                backgroundColor: getStatusColor(item.status),
+                backgroundColor: OUTBOUND_STATUS_COLOR[item.status],
                 paddingHorizontal: 8,
                 paddingVertical: 4,
                 borderRadius: 4,
               }}>
-                <Text style={{ color: 'white' }}>{getStatusText(item.status)}</Text>
+                <Text style={{ color: 'white' }}>{OUTBOUND_STATUS_TEXT[item.status]}</Text>
               </View>
             </DataTable.Cell>
           </DataTable.Row>
@@ -87,38 +87,4 @@ export default function Outbound() {
       </DataTable>
     </ScrollView>
   );
-}
-
-function getStatusText(status: number): string {
-  switch (status) {
-    case OutboundStatus.Pending:
-      return 'Đang chờ';
-    case OutboundStatus.InProgress:
-      return 'Đang xử lý';
-    case OutboundStatus.Cancelled:
-      return 'Đã hủy';
-    case OutboundStatus.Completed:
-      return 'Hoàn thành';
-    case OutboundStatus.Returned:
-      return 'Đã trả lại';
-    default:
-      return 'Không xác định';
-  }
-}
-
-function getStatusColor(status: number): string {
-  switch (status) {
-    case OutboundStatus.Pending:
-      return '#FF9800'; // Orange
-    case OutboundStatus.InProgress:
-      return '#2196F3'; // Blue
-    case OutboundStatus.Cancelled:
-      return '#F44336'; // Red
-    case OutboundStatus.Completed:
-      return '#4CAF50'; // Green
-    case OutboundStatus.Returned:
-      return '#9C27B0'; // Purple
-    default:
-      return '#9E9E9E'; // Gray
-  }
 }

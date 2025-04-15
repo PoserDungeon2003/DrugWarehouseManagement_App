@@ -11,6 +11,8 @@ import { useGetUser } from '@/hooks/useUser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PaperProvider } from 'react-native-paper';
 import theme from '@/theme';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import { ToastProvider } from 'react-native-paper-toast';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -69,23 +71,27 @@ function RootLayoutNav() {
   const token = user.data?.[0][1]; // Access token
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <PaperProvider theme={theme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{
-            title: 'Login',
-            headerShown: false,
-          }}
-          />
-          <Stack.Screen name='profile' options={{
-            title: 'Thông tin cá nhân',
-          }} />
-          <Stack.Screen name='outbound-details/[id]' options={{
-            title: 'Chi tiết phiếu xuất',
-          }} />
-        </Stack>
-      </PaperProvider>
-    </ThemeProvider >
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <PaperProvider theme={theme}>
+          <ToastProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="login" options={{
+                title: 'Login',
+                headerShown: false,
+              }}
+              />
+              <Stack.Screen name='profile' options={{
+                title: 'Thông tin cá nhân',
+              }} />
+              <Stack.Screen name='outbound-details/[id]' options={{
+                title: 'Chi tiết phiếu xuất',
+              }} />
+            </Stack>
+          </ToastProvider>
+        </PaperProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

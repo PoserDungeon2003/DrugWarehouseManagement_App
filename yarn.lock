@@ -5872,6 +5872,11 @@ react-native-is-edge-to-edge@^1.1.6:
   resolved "https://registry.yarnpkg.com/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.1.7.tgz#28947688f9fafd584e73a4f935ea9603bd9b1939"
   integrity sha512-EH6i7E8epJGIcu7KpfXYXiV2JFIYITtq+rVS8uEb+92naMRBdxhTuS8Wn2Q7j9sqyO0B+Xbaaf9VdipIAmGW4w==
 
+react-native-paper-toast@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/react-native-paper-toast/-/react-native-paper-toast-2.1.0.tgz#8fb3ea6b641162d3c2cc1f83f9d98e98ff5cc7af"
+  integrity sha512-oDcRwom+lioZ5iIPKtegKFeMgGlzkxdapgYRWl6695Q8QnaICew7PgoFv1jpErMQVq16EL4+g2YsyHAAa/VB+g==
+
 react-native-paper@^5.13.1:
   version "5.13.1"
   resolved "https://registry.yarnpkg.com/react-native-paper/-/react-native-paper-5.13.1.tgz#50217012b2d008397296c9bfb755d603a373f48b"

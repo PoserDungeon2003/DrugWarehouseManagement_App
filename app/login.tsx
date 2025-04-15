@@ -12,6 +12,7 @@ import theme from "@/theme";
 import api from "@/api";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "react-native-paper-toast";
 
 const schema = object({
   username: string().required('Tên người dùng là bắt buộc'),
@@ -30,6 +31,7 @@ export default function LoginScreen() {
       password: '',
     }
   })
+  const { show } = useToast();
 
   const onSubmit = async (data: LoginType) => {
     try {
@@ -44,13 +46,20 @@ export default function LoginScreen() {
           [REFRESH_TOKEN_KEY, refreshToken],
           ['role', role],
         ])
+        show({
+          message: 'Đăng nhập thành công',
+          duration: 2000,
+          type: 'success',
+        })
         queryClient.resetQueries();
         router.push('/')
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setError('root', {
-        message: error?.response?.data?.message || 'Đăng nhập không thành công',
+      show({
+        message: error?.response?.data?.message || 'Đăng nhập thất bại',
+        duration: 2000,
+        type: 'error',
       })
     }
   }
