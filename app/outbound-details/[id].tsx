@@ -19,6 +19,7 @@ export default function OutboundDetails() {
   const queryClient = useQueryClient();
   const [approveDialogVisible, setApproveDialogVisible] = useState(false);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
 
   const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
@@ -56,7 +57,60 @@ export default function OutboundDetails() {
     }
   }
 
+  const handleComplete = async () => {
+    try {
+      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
+        status: 4
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response) {
+        setCompleteDialogVisible(false);
+        queryClient.invalidateQueries({
+          queryKey: ['outbound']
+        });
+        show({
+          message: 'Chuyển trạng thái phiếu xuất thành công',
+          type: 'success',
+        });
+      }
+    } catch (error: any) {
+      console.log('Error approving outbound: ', error);
+      show({
+        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi chỉnh sửa phiếu xuất',
+        type: 'error',
+      })
+    }
+  }
+
   const handleCancel = async () => {
+    try {
+      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
+        status: 3
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response) {
+        setCancelDialogVisible(false);
+        queryClient.invalidateQueries({
+          queryKey: ['outbound']
+        });
+        show({
+          message: 'Hủy phiếu xuất thành công',
+          type: 'success',
+        });
+      }
+    } catch (error: any) {
+      console.log('Error approving outbound: ', error);
+      show({
+        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi hủy phiếu xuất',
+        type: 'error',
+      })
+    }
   }
 
   if (isLoading) {
@@ -205,22 +259,47 @@ export default function OutboundDetails() {
             <Title>Thao tác</Title>
             <Divider style={styles.divider} />
             <View style={styles.buttonContainer}>
-              <Button
-                mode="contained"
-                onPress={() => setApproveDialogVisible(true)}
-                style={[styles.actionButton, styles.approveButton]}
-                icon="check-circle"
-              >
-                Phê duyệt
-              </Button>
-              <Button
-                mode="contained"
-                onPress={() => setCancelDialogVisible(true)}
-                style={[styles.actionButton, styles.cancelButton]}
-                icon="cancel"
-              >
-                Hủy phiếu
-              </Button>
+              {outbound?.status === 1 ? (
+                <>
+                  <Button
+                    mode="contained"
+                    onPress={() => setApproveDialogVisible(true)}
+                    style={[styles.actionButton, styles.approveButton]}
+                    icon="check-circle"
+                  >
+                    Phê duyệt
+                  </Button>
+                  <Button
+                    mode="contained"
+                    onPress={() => setCancelDialogVisible(true)}
+                    style={[styles.actionButton, styles.cancelButton]}
+                    icon="cancel"
+                  >
+                    Hủy phiếu
+                  </Button>
+                </>
+              ) : outbound?.status == 2 ? (
+                <>
+                  <Button
+                    mode="contained"
+                    onPress={() => setCompleteDialogVisible(true)}
+                    style={[styles.actionButton, styles.approveButton]}
+                    icon="check-circle"
+                  >
+                    Hoàn thành
+                  </Button>
+                  <Button
+                    mode="contained"
+                    onPress={() => setCancelDialogVisible(true)}
+                    style={[styles.actionButton, styles.cancelButton]}
+                    icon="cancel"
+                  >
+                    Hủy phiếu
+                  </Button>
+                </>
+              ) : (
+                null
+              )}
             </View>
           </Card.Content>
         </Card>
@@ -238,6 +317,26 @@ export default function OutboundDetails() {
             <Button
               mode="contained"
               onPress={handleApprove}
+              disabled={isLoading}
+            >
+              Xác nhận
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+      <Portal>
+        <Dialog visible={completeDialogVisible} onDismiss={() => setCompleteDialogVisible(false)}>
+          <Dialog.Title>Xác nhận hoàn thành</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Bạn có chắc chắn muốn đánh dấu phiếu xuất này đã hoàn thành?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCompleteDialogVisible(false)}>Hủy bỏ</Button>
+            <Button
+              mode="contained"
+              onPress={handleComplete}
               disabled={isLoading}
             >
               Xác nhận
