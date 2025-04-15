@@ -72,7 +72,7 @@ function RootLayoutNav() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={DefaultTheme}>
         <PaperProvider theme={theme}>
           <ToastProvider>
             <Stack>
@@ -84,6 +84,7 @@ function RootLayoutNav() {
               />
               <Stack.Screen name='profile' options={{
                 title: 'Thông tin cá nhân',
+                headerBackButtonDisplayMode: 'minimal',
               }} />
               <Stack.Screen name='outbound-details/[id]' options={{
                 title: 'Chi tiết phiếu xuất',

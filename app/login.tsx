@@ -15,8 +15,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "react-native-paper-toast";
 
 const schema = object({
-  username: string().required('Tên người dùng là bắt buộc'),
-  password: string().required('Mật khẩu là bắt buộc'),
+  username: string().required('Tên người dùng là bắt buộc').trim(),
+  password: string().required('Mật khẩu là bắt buộc').trim(),
 })
 
 export type LoginType = InferType<typeof schema>;
@@ -77,7 +77,7 @@ export default function LoginScreen() {
       }}>
         Phần mềm quản lý kho thuốc
       </Text>
-      <View>
+      <View style={styles.formContainer}>
         <Controller
           control={control}
           name="username"
@@ -184,6 +184,7 @@ const TextInput = ({ errorText, description, ...props }: TextInputProps) => {
         mode="outlined"
         outlineColor={theme.colors.primary}
         activeOutlineColor={theme.colors.primary}
+        contentStyle={textInputStyles.contentStyle}
         {...props}
       />
       {description && !errorText ? (
@@ -200,7 +201,16 @@ const textInputStyles = StyleSheet.create({
     marginVertical: 12,
   },
   input: {
-    // backgroundColor: theme.colors.surface,
+    width: '100%',
+    fontSize: 18, // Increased for better readability
+    backgroundColor: theme.colors.surface,
+    height: 56, // Explicit height helps with consistency
+  },
+  contentStyle: {
+    paddingVertical: 12,
+    paddingHorizontal: 16, // Add horizontal padding
+    fontSize: 18,
+    minHeight: 56, // Match height
   },
   description: {
     fontSize: 13,
@@ -213,3 +223,12 @@ const textInputStyles = StyleSheet.create({
     paddingTop: 8,
   },
 })
+
+const styles = StyleSheet.create({
+  formContainer: {
+    width: '100%',
+    maxWidth: 400, // Prevents it from getting too wide on tablets
+    alignSelf: 'stretch', // Takes up available width
+    paddingHorizontal: 20, // Prevents inputs from touching screen edges
+  },
+});

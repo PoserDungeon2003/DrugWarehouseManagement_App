@@ -39,15 +39,7 @@ export interface OutboundItem {
   outboundDetails: OutboundDetail[];
 }
 
-export interface OutboundResponse {
-  items: OutboundItem[];
-  totalCount: number;
-  pageSize: number;
-  currentPage: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-}
+export type OutboundResponse = PaginatedResponse<OutboundItem>
 
 export interface QueryPaging {
   page: number;
@@ -60,3 +52,15 @@ export interface SearchOutboundRequest extends QueryPaging {
   customerId?: number | null;
   status?: string | null;
 }
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalCount: number;
+  pageSize: number;
+  currentPage: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export type CustomerResponse = PaginatedResponse<Customer>;
