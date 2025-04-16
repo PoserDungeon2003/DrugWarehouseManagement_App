@@ -64,3 +64,25 @@ export interface PaginatedResponse<T> {
 }
 
 export type CustomerResponse = PaginatedResponse<Customer>;
+
+export interface LotTransferDetail {
+  lotTransferDetailId: number;
+  expiryDate: string;
+  quantity: number;
+  productName: string | null;
+  lotNumber: string;
+}
+
+export interface LotTransferItem {
+  lotTransferId: number;
+  lotTransferCode: string;
+  lotTransferStatus: string;
+  fromWareHouse: string;
+  toWareHouse: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+  lotTransferDetails: LotTransferDetail[];
+}
+
+export type LotTransferResponse = PaginatedResponse<LotTransferItem>;
