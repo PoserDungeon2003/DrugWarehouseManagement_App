@@ -5,3 +5,10 @@ export enum OutboundStatus {
   Completed = 4,
   Returned = 5
 }
+
+export enum LotTransferStatus {
+  Pending = 1,
+  InProgress = 2,
+  Completed = 3,
+  Cancelled = 4
+}

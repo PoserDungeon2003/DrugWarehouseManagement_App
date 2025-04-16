@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { useGetUser } from '@/hooks/useUser';
+import { useGetProfile, useGetUser } from '@/hooks/useUser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PaperProvider } from 'react-native-paper';
 import theme from '@/theme';
@@ -68,6 +68,11 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const user = useGetUser();
   const token = user.data?.[0][1]; // Access token
+  const { data: profile, isError } = useGetProfile(token || '');
+
+  // if (isError || !profile?.id) {
+  //   router.replace('/login');
+  // }
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
@@ -87,6 +92,9 @@ function RootLayoutNav() {
               }} />
               <Stack.Screen name='outbound-details/[id]' options={{
                 title: 'Chi tiết phiếu xuất',
+              }} />
+              <Stack.Screen name='lot-transfer-details/[id]' options={{
+                title: 'Chi tiết phiếu chuyển kho',
               }} />
             </Stack>
           </ToastProvider>

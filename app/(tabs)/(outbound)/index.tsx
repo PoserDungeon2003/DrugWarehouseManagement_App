@@ -227,7 +227,7 @@ export default function Outbound() {
 
 
         {/* Reset Filters Button */}
-        {(searchQuery || dateFrom || dateTo || statusFilter !== null) && (
+        {(searchQuery || dateFrom || dateTo || customerFilter || statusFilter !== null) && (
           <Button
             mode="text"
             onPress={resetFilters}
@@ -268,10 +268,11 @@ export default function Outbound() {
         <DataTable.Header>
           <DataTable.Title style={{ flex: 0.3 }}>ID</DataTable.Title>
           <DataTable.Title style={{ flex: 1, justifyContent: 'flex-start' }}>Người nhận</DataTable.Title>
+          <DataTable.Title style={{ flex: 0.5 }}>Ngày tạo</DataTable.Title>
           <DataTable.Title numeric>Trạng thái</DataTable.Title>
         </DataTable.Header>
         {isLoading ? (
-          <View>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         ) : (
@@ -281,10 +282,17 @@ export default function Outbound() {
             ) : (
               <>
                 {_.map(filteredData, (item, index) => (
-                  <DataTable.Row key={index} onPress={() => router.push(`/outbound-details/${item.outboundId}`)}>
+                  <DataTable.Row
+                    key={index}
+                    onPress={() => router.push(`/outbound-details/${item.outboundId}`)}
+                    style={styles.dataRow}
+                  >
                     <DataTable.Cell style={{ flex: 0.3 }}>{item.outboundId}</DataTable.Cell>
                     <DataTable.Cell style={{ flex: 1, justifyContent: 'flex-start' }}>
                       {item.customerName}
+                    </DataTable.Cell>
+                    <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
+                      {format(new Date(item.outboundDate), 'dd/MM/yyyy')}
                     </DataTable.Cell>
                     <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
                       <View style={{
@@ -306,7 +314,7 @@ export default function Outbound() {
           page={page}
           numberOfPages={data?.totalPages || 0}
           onPageChange={handlePageChange}
-          label={`${from + 1}-${to} of ${data?.totalPages}`}
+          label={`${from + 1}-${to} của ${data?.totalCount}`}
           numberOfItemsPerPageList={numberOfItemsPerPageList}
           numberOfItemsPerPage={itemsPerPage}
           onItemsPerPageChange={handleItemsPerPageChange}
@@ -340,11 +348,13 @@ const styles = StyleSheet.create({
   },
   chipContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 4,
     paddingVertical: 4,
   },
   statusChip: {
     marginRight: 8,
+    marginBottom: 8,
   },
   resetButton: {
     alignSelf: 'flex-end',
@@ -361,6 +371,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 16,
   },
   customerFilterRow: {
     marginVertical: 8,
@@ -397,5 +409,11 @@ const styles = StyleSheet.create({
   customerItemSelected: {
     backgroundColor: '#f0f0f0',
   },
-
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  dataRow: {
+    minHeight: 60,
+  },
 });

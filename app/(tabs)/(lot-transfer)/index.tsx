@@ -1,41 +1,34 @@
-import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
-import { OutboundStatus } from "@/common/enum";
+import { LOT_TRANSFER_STATUS_TEXT, OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
 import { useGetOutbound } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { router } from "expo-router";
 import _ from "lodash";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
-import { Button, Chip, DataTable, Divider, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
+import { Badge, Button, Chip, DataTable, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SearchOutboundRequest } from "@/types";
-import { useGetCustomers } from "@/hooks/useCustomer";
+import { useGetLotTransfers } from "@/hooks/useLotTransfer";
 
-export default function Outbound() {
+export default function LotTransfer() {
   const [page, setPage] = useState<number>(0);
   const [numberOfItemsPerPageList] = useState([5, 10, 20, 50, 100]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [statusFilter, setStatusFilter] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const user = useGetUser();
   const token = user?.data?.[0][1];
-  const { data: customerData } = useGetCustomers(token || "", {
-    page: 1,
-    pageSize: 100,
-  })
-  const [customerFilter, setCustomerFilter] = useState<number | null>(null);
-  const [customersMenuVisible, setCustomersMenuVisible] = useState(false);
   const [queryParams, setQueryParams] = useState<Omit<SearchOutboundRequest, "page" | "pageSize">>({
     search: searchQuery,
     dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
     dateTo: dateTo ? dateTo.toISOString() : undefined,
     status: statusFilter?.toString(),
   });
-  const { data, isLoading, isError, error } = useGetOutbound(token || "", {
+  const { data, isLoading, isError, error } = useGetLotTransfers(token || "", {
     ...queryParams,
     page: page + 1,
     pageSize: itemsPerPage,
@@ -48,7 +41,6 @@ export default function Outbound() {
         dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
         dateTo: dateTo ? dateTo.toISOString() : undefined,
         status: statusFilter?.toString() || undefined,
-        customerId: customerFilter || undefined,
       });
     }, 500);
 
@@ -57,7 +49,7 @@ export default function Outbound() {
     return () => {
       handler.cancel();
     };
-  }, [searchQuery, dateFrom, dateTo, statusFilter, customerFilter]);
+  }, [searchQuery, dateFrom, dateTo, statusFilter]);
 
 
   const handlePageChange = (newPage: number) => {
@@ -74,7 +66,7 @@ export default function Outbound() {
 
   const filteredData = useMemo(() => {
     return _(data?.items)
-      .orderBy(it => it.status, 'asc')
+      .orderBy(it => it.lotTransferStatus, 'asc')
       .value();
   }, [data?.items]);
 
@@ -84,7 +76,6 @@ export default function Outbound() {
     setDateFrom(null);
     setDateTo(null);
     setStatusFilter(null);
-    setCustomerFilter(null);
   };
 
   return (
@@ -133,24 +124,23 @@ export default function Outbound() {
             />
           )}
         </View>
-
         {/* Status Filter Chips */}
         <View style={styles.statusFilterRow}>
           <Text variant="bodySmall">Trạng thái:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.chipContainer}>
-              {Object.entries(OUTBOUND_STATUS_TEXT).map(([status, label]) => (
+              {Object.entries(LOT_TRANSFER_STATUS_TEXT).map(([status, label]) => (
                 <Chip
                   key={status}
-                  selected={statusFilter === Number(status)}
-                  onPress={() => setStatusFilter(statusFilter === Number(status) ? null : Number(status))}
+                  selected={statusFilter === status}
+                  onPress={() => setStatusFilter(statusFilter === status ? null : status)}
                   style={[
                     styles.statusChip,
-                    statusFilter === Number(status) && {
-                      backgroundColor: OUTBOUND_STATUS_COLOR[Number(status)]
+                    statusFilter === status && {
+                      backgroundColor: LOT_TRANSFER_STATUS_COLOR[status]
                     }
                   ]}
-                  textStyle={statusFilter === Number(status) ? { color: 'white' } : {}}
+                  textStyle={statusFilter === status ? { color: 'white' } : {}}
                 >
                   {label}
                 </Chip>
@@ -158,74 +148,6 @@ export default function Outbound() {
             </View>
           </ScrollView>
         </View>
-        <View style={styles.customerFilterRow}>
-          <Text variant="bodySmall">Khách hàng:</Text>
-          <View style={styles.customerDropdownContainer}>
-            <Button
-              mode="outlined"
-              onPress={() => setCustomersMenuVisible(true)}
-              icon="account-circle"
-              style={styles.customerButton}
-            >
-              {customerFilter
-                ? customerData?.items.find(c => c.customerId === customerFilter)?.customerName || 'Chọn khách hàng'
-                : 'Chọn khách hàng'}
-            </Button>
-            {customerFilter && (
-              <IconButton
-                icon="close-circle"
-                size={20}
-                onPress={() => setCustomerFilter(null)}
-              />
-            )}
-          </View>
-
-          <Portal>
-            <Modal
-              visible={customersMenuVisible}
-              onDismiss={() => setCustomersMenuVisible(false)}
-              contentContainerStyle={styles.modalContainer}
-            >
-              <View style={styles.modalHeader}>
-                <Text variant="titleMedium">Chọn khách hàng</Text>
-                <IconButton
-                  icon="close"
-                  size={20}
-                  onPress={() => setCustomersMenuVisible(false)}
-                />
-              </View>
-
-              <Divider />
-
-              <TextInput
-                placeholder="Tìm kiếm khách hàng"
-                style={styles.customerSearchInput}
-                left={<TextInput.Icon icon="magnify" />}
-              />
-
-              <ScrollView style={styles.customersList}>
-                {customerData?.items?.map((customer) => (
-                  <Button
-                    key={customer.customerId}
-                    mode="text"
-                    onPress={() => {
-                      setCustomerFilter(customer.customerId);
-                      setCustomersMenuVisible(false);
-                    }}
-                    style={[
-                      styles.customerItem,
-                      customerFilter === customer.customerId && styles.customerItemSelected
-                    ]}
-                  >
-                    {customer.customerName} ({customer.phoneNumber})
-                  </Button>
-                ))}
-              </ScrollView>
-            </Modal>
-          </Portal>
-        </View>
-
-
         {/* Reset Filters Button */}
         {(searchQuery || dateFrom || dateTo || statusFilter !== null) && (
           <Button
@@ -266,12 +188,15 @@ export default function Outbound() {
 
       <DataTable>
         <DataTable.Header>
-          <DataTable.Title style={{ flex: 0.3 }}>ID</DataTable.Title>
-          <DataTable.Title style={{ flex: 1, justifyContent: 'flex-start' }}>Người nhận</DataTable.Title>
-          <DataTable.Title numeric>Trạng thái</DataTable.Title>
+          <DataTable.Title style={{ flex: 0.4 }}>ID</DataTable.Title>
+          <DataTable.Title style={{ flex: 1 }}>Từ kho</DataTable.Title>
+          <DataTable.Title style={{ flex: 1 }}>Đến kho</DataTable.Title>
+          <DataTable.Title style={{ flex: 0.8 }}>Ngày tạo</DataTable.Title>
+          <DataTable.Title style={{ flex: 0.6 }} numeric>Trạng thái</DataTable.Title>
         </DataTable.Header>
+
         {isLoading ? (
-          <View>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         ) : (
@@ -280,20 +205,32 @@ export default function Outbound() {
               <Text style={styles.resultsCounter}>Không có kết quả nào</Text>
             ) : (
               <>
-                {_.map(filteredData, (item, index) => (
-                  <DataTable.Row key={index} onPress={() => router.push(`/outbound-details/${item.outboundId}`)}>
-                    <DataTable.Cell style={{ flex: 0.3 }}>{item.outboundId}</DataTable.Cell>
-                    <DataTable.Cell style={{ flex: 1, justifyContent: 'flex-start' }}>
-                      {item.customerName}
+                {filteredData.map((item) => (
+                  <DataTable.Row
+                    key={item.lotTransferId}
+                    onPress={() => router.push(`/lot-transfer-details/${item.lotTransferId}`)}
+                    style={styles.dataRow}
+                  >
+                    <DataTable.Cell style={{ flex: 0.4 }}>{item.lotTransferId}</DataTable.Cell>
+                    <DataTable.Cell style={{ flex: 1 }}>{item.fromWareHouse}</DataTable.Cell>
+                    <DataTable.Cell style={{ flex: 1 }}>{item.toWareHouse}</DataTable.Cell>
+                    <DataTable.Cell style={{ flex: 0.8 }}>
+                      {format(new Date(item.createdAt), 'dd/MM/yyyy')}
                     </DataTable.Cell>
                     <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
-                      <View style={{
-                        backgroundColor: OUTBOUND_STATUS_COLOR[item.status],
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 4,
-                      }}>
-                        <Text style={{ color: 'white' }}>{OUTBOUND_STATUS_TEXT[item.status]}</Text>
+                      <View
+                        style={{
+                          backgroundColor: LOT_TRANSFER_STATUS_COLOR[item.lotTransferStatus.toLowerCase()],
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 4,
+                          alignItems: 'center',
+                          minWidth: 80,
+                        }}
+                      >
+                        <Text style={{ color: 'white', fontWeight: '500', fontSize: 12 }}>
+                          {LOT_TRANSFER_STATUS_TEXT[item.lotTransferStatus.toLowerCase()]}
+                        </Text>
                       </View>
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -302,15 +239,17 @@ export default function Outbound() {
             )}
           </>
         )}
+
         <DataTable.Pagination
           page={page}
           numberOfPages={data?.totalPages || 0}
           onPageChange={handlePageChange}
-          label={`${from + 1}-${to} of ${data?.totalPages}`}
+          label={`${from + 1}-${to} của ${data?.totalCount || 0}`}
           numberOfItemsPerPageList={numberOfItemsPerPageList}
           numberOfItemsPerPage={itemsPerPage}
           onItemsPerPageChange={handleItemsPerPageChange}
           selectPageDropdownLabel={'Hàng mỗi trang'}
+          showFastPaginationControls
         />
       </DataTable>
     </ScrollView>
@@ -340,11 +279,13 @@ const styles = StyleSheet.create({
   },
   chipContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 4,
     paddingVertical: 4,
   },
   statusChip: {
     marginRight: 8,
+    marginBottom: 8,
   },
   resetButton: {
     alignSelf: 'flex-end',
@@ -361,41 +302,25 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 16,
   },
-  customerFilterRow: {
-    marginVertical: 8,
-  },
-  customerDropdownContainer: {
-    flexDirection: 'row',
+  loadingContainer: {
+    padding: 20,
     alignItems: 'center',
-    marginTop: 4,
   },
-  customerButton: {
-    flex: 1,
+  createButton: {
+    margin: 8,
+    marginBottom: 16,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  dataRow: {
+    minHeight: 60,
   },
-  customerSearchInput: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-  },
-  customersList: {
-    maxHeight: 300,
-  },
-  customerItem: {
-    textAlign: 'left',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  customerItemSelected: {
-    backgroundColor: '#f0f0f0',
-  },
-
 });
+
+const LOT_TRANSFER_STATUS_COLOR: Record<string, string> = {
+  "pending": "#FF9800",    // Orange
+  "inprogress": "#2196F3", // Blue
+  "completed": "#4CAF50",  // Green
+  "cancelled": "#F44336"   // Red
+};

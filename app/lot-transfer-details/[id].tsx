@@ -1,6 +1,8 @@
 import api from "@/api";
-import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
+import { LOT_TRANSFER_STATUS_TEXT, OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
+import { LotTransferStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
+import { useGetLotTransferById } from "@/hooks/useLotTransfer";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +14,7 @@ import { ScrollView, View, StyleSheet } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, Portal, Text, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
-export default function OutboundDetails() {
+export default function LotTransferDetails() {
   const { id } = useLocalSearchParams();
   const user = useGetUser();
   const token = user?.data?.[0][1];
@@ -22,17 +24,13 @@ export default function OutboundDetails() {
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
 
-  const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
-
-  // Calculate total amount
-  const totalAmount = _.reduce(outbound?.outboundDetails,
-    (sum, item) => sum + item.totalPrice, 0
-  );
+  const { data: lotTransfer, isLoading } = useGetLotTransferById(token || "", Number(id));
 
   const handleApprove = async () => {
     try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 2
+      const response = await api.put(`/api/LotTransfer`, {
+        lotTransferId: lotTransfer?.lotTransferId,
+        lotTransferStatus: 2
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -41,26 +39,27 @@ export default function OutboundDetails() {
       if (response) {
         setApproveDialogVisible(false);
         queryClient.invalidateQueries({
-          queryKey: ['outbound']
+          queryKey: ['lot-transfer']
         });
         show({
-          message: 'Phê duyệt phiếu xuất thành công',
+          message: 'Phê duyệt phiếu chuyển kho thành công',
           type: 'success',
         });
       }
     } catch (error: any) {
-      console.log('Error approving outbound: ', error);
+      console.log('Error approving lot transfer: ', error);
       show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi phê duyệt phiếu xuất',
+        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi phê duyệt phiếu chuyển kho',
         type: 'error',
-      })
+      });
     }
   }
 
   const handleComplete = async () => {
     try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 4
+      const response = await api.put(`/api/LotTransfer`, {
+        lotTransferId: lotTransfer?.lotTransferId,
+        lotTransferStatus: 3
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -69,27 +68,25 @@ export default function OutboundDetails() {
       if (response) {
         setCompleteDialogVisible(false);
         queryClient.invalidateQueries({
-          queryKey: ['outbound']
+          queryKey: ['lot-transfer']
         });
         show({
-          message: 'Chuyển trạng thái phiếu xuất thành công',
+          message: 'Hoàn thành phiếu chuyển kho thành công',
           type: 'success',
         });
       }
     } catch (error: any) {
-      console.log('Error approving outbound: ', error);
+      console.log('Error completing lot transfer: ', error);
       show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi chỉnh sửa phiếu xuất',
+        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi hoàn thành phiếu chuyển kho',
         type: 'error',
-      })
+      });
     }
   }
 
   const handleCancel = async () => {
     try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 3
-      }, {
+      const response = await api.post(`/api/LotTransfer/cancel/${lotTransfer?.lotTransferId}`, {}, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -97,19 +94,19 @@ export default function OutboundDetails() {
       if (response) {
         setCancelDialogVisible(false);
         queryClient.invalidateQueries({
-          queryKey: ['outbound']
+          queryKey: ['lot-transfer']
         });
         show({
-          message: 'Hủy phiếu xuất thành công',
+          message: 'Hủy phiếu chuyển kho thành công',
           type: 'success',
         });
       }
     } catch (error: any) {
-      console.log('Error approving outbound: ', error);
+      console.log('Error cancelling lot transfer: ', error);
       show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi hủy phiếu xuất',
+        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi hủy phiếu chuyển kho',
         type: 'error',
-      })
+      });
     }
   }
 
@@ -128,16 +125,16 @@ export default function OutboundDetails() {
           <Card style={styles.card}>
             <Card.Content>
               <View style={styles.headerRow}>
-                <Title>Chi tiết phiếu xuất</Title>
+                <Title>Chi tiết phiếu chuyển kho</Title>
                 <Badge
                   size={32}
                   style={{
-                    backgroundColor: getStatusColor(outbound?.status),
+                    backgroundColor: getStatusColor(lotTransfer?.lotTransferStatus.toLowerCase()),
                     paddingHorizontal: 8,
                     fontWeight: 'semibold',
                   }}
                 >
-                  {OUTBOUND_STATUS_TEXT[outbound?.status || 0]}
+                  {LOT_TRANSFER_STATUS_TEXT[lotTransfer?.lotTransferStatus.toLowerCase() || "Không xác định"]}
                 </Badge>
               </View>
 
@@ -145,120 +142,98 @@ export default function OutboundDetails() {
 
               <View style={styles.infoRow}>
                 <Text variant="bodyMedium" style={styles.label}>Mã phiếu:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.outboundCode}</Text>
+                <Text variant="bodyLarge" style={styles.value}>{lotTransfer?.lotTransferCode}</Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Ngày xuất:</Text>
+                <Text variant="bodyMedium" style={styles.label}>Ngày tạo:</Text>
                 <Text variant="bodyLarge" style={styles.value}>
-                  {format(new Date(outbound?.outboundDate || new Date()), "dd/MM/yyyy HH:mm")}
+                  {format(new Date(lotTransfer?.createdAt || new Date()), "dd/MM/yyyy HH:mm")}
                 </Text>
               </View>
 
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Tổng tiền:</Text>
-                <Text variant="bodyLarge" style={styles.value}>
-                  {formatVND(totalAmount)}
-                </Text>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Customer Information */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Thông tin khách hàng</Title>
-              <Divider style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Khách hàng:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.customerName}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.phoneNumber}</Text>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Receiver Information */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Thông tin người nhận</Title>
-              <Divider style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Tên người nhận:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverName}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverPhone}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Địa chỉ:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverAddress}</Text>
-              </View>
-
-              {outbound?.note && (
+              {lotTransfer?.updatedAt && (
                 <View style={styles.infoRow}>
-                  <Text variant="bodyMedium" style={styles.label}>Ghi chú:</Text>
-                  <Text variant="bodyLarge" style={styles.value}>{outbound.note}</Text>
+                  <Text variant="bodyMedium" style={styles.label}>Cập nhật:</Text>
+                  <Text variant="bodyLarge" style={styles.value}>
+                    {format(new Date(lotTransfer.updatedAt), "dd/MM/yyyy HH:mm")}
+                  </Text>
                 </View>
               )}
+            </Card.Content>
+          </Card>
+
+          {/* Warehouse Information */}
+          <Card style={styles.card}>
+            <Card.Content>
+              <Title>Thông tin chuyển kho</Title>
+              <Divider style={styles.divider} />
+
+              <View style={styles.infoRow}>
+                <Text variant="bodyMedium" style={styles.label}>Từ kho:</Text>
+                <Text variant="bodyLarge" style={styles.value}>{lotTransfer?.fromWareHouse}</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text variant="bodyMedium" style={styles.label}>Đến kho:</Text>
+                <Text variant="bodyLarge" style={styles.value}>{lotTransfer?.toWareHouse}</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text variant="bodyMedium" style={styles.label}>Người tạo:</Text>
+                <Text variant="bodyLarge" style={styles.value}>{lotTransfer?.createdBy}</Text>
+              </View>
             </Card.Content>
           </Card>
 
           {/* Product Details */}
           <Card style={styles.card}>
             <Card.Content>
-              <Title>Chi tiết sản phẩm</Title>
+              <Title>Chi tiết sản phẩm chuyển kho</Title>
               <Divider style={styles.divider} />
 
               <DataTable>
                 <DataTable.Header>
                   <DataTable.Title>Sản phẩm</DataTable.Title>
-                  <DataTable.Title numeric>SL</DataTable.Title>
-                  <DataTable.Title numeric>Đơn giá</DataTable.Title>
-                  <DataTable.Title numeric>Thành tiền</DataTable.Title>
+                  <DataTable.Title>Số lô</DataTable.Title>
+                  <DataTable.Title numeric>Số lượng</DataTable.Title>
+                  <DataTable.Title style={{ justifyContent: "flex-end" }}>Hạn dùng</DataTable.Title>
                 </DataTable.Header>
 
-                {outbound?.outboundDetails.map((detail) => (
-                  <DataTable.Row key={detail.outboundDetailsId}>
+                {lotTransfer?.lotTransferDetails.map((detail) => (
+                  <DataTable.Row key={detail.lotTransferDetailId}>
                     <DataTable.Cell>
-                      <Text variant="bodyMedium">{detail.productName}</Text>
-                      <Text variant="bodySmall">{detail.lotNumber} - {detail.unitType}</Text>
+                      <Text variant="bodyMedium">{detail.productName || "Không có tên"}</Text>
                     </DataTable.Cell>
+                    <DataTable.Cell>{detail.lotNumber}</DataTable.Cell>
                     <DataTable.Cell numeric>{detail.quantity}</DataTable.Cell>
-                    <DataTable.Cell numeric>
-                      {formatVND(detail.unitPrice)}
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric>
-                      {formatVND(detail.totalPrice)}
+                    <DataTable.Cell style={{ justifyContent: "flex-end" }}>
+                      {detail.expiryDate && detail.expiryDate !== "0001-01-01"
+                        ? format(new Date(detail.expiryDate), "dd/MM/yyyy")
+                        : "N/A"}
                     </DataTable.Cell>
                   </DataTable.Row>
                 ))}
 
                 <DataTable.Row style={styles.totalRow}>
-                  <DataTable.Cell><Text variant="bodyLarge">Tổng cộng</Text></DataTable.Cell>
+                  <DataTable.Cell><Text variant="bodyLarge">Tổng sản phẩm</Text></DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text variant="bodyLarge" style={styles.totalAmount}>
-                      {formatVND(totalAmount)}
+                      {lotTransfer?.lotTransferDetails.reduce((acc, item) => acc + item.quantity, 0) || 0}
                     </Text>
                   </DataTable.Cell>
                 </DataTable.Row>
               </DataTable>
             </Card.Content>
           </Card>
+
+          {/* Actions Section */}
           <Card style={styles.card}>
             <Card.Content>
               <Title>Thao tác</Title>
               <Divider style={styles.divider} />
               <View style={styles.buttonContainer}>
-                {outbound?.status === 1 ? (
+                {lotTransfer?.lotTransferStatus.toLowerCase() == "pending" ? (
                   <>
                     <Button
                       mode="contained"
@@ -277,7 +252,7 @@ export default function OutboundDetails() {
                       Hủy phiếu
                     </Button>
                   </>
-                ) : outbound?.status == 2 ? (
+                ) : lotTransfer?.lotTransferStatus.toLowerCase() == "inprogress" ? (
                   <>
                     <Button
                       mode="contained"
@@ -304,12 +279,13 @@ export default function OutboundDetails() {
           </Card>
         </View>
       </ScrollView>
+      {/* Approve Dialog */}
       <Portal>
         <Dialog visible={approveDialogVisible} onDismiss={() => setApproveDialogVisible(false)}>
           <Dialog.Title>Xác nhận phê duyệt</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn phê duyệt phiếu xuất này?
+              Bạn có chắc chắn muốn phê duyệt phiếu chuyển kho này?
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -324,12 +300,14 @@ export default function OutboundDetails() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Complete Dialog */}
       <Portal>
         <Dialog visible={completeDialogVisible} onDismiss={() => setCompleteDialogVisible(false)}>
           <Dialog.Title>Xác nhận hoàn thành</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn đánh dấu phiếu xuất này đã hoàn thành?
+              Bạn có chắc chắn muốn đánh dấu phiếu chuyển kho này đã hoàn thành?
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -351,7 +329,7 @@ export default function OutboundDetails() {
           <Dialog.Title>Xác nhận hủy phiếu</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn hủy phiếu xuất này?
+              Bạn có chắc chắn muốn hủy phiếu chuyển kho này?
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -428,13 +406,12 @@ const styles = StyleSheet.create({
   },
 });
 
-const getStatusColor = (status?: number): string => {
+const getStatusColor = (status?: string): string => {
   switch (status) {
-    case 1: return 'orange';
-    case 2: return 'blue';
-    case 3: return 'red';
-    case 4: return 'green';
-    case 5: return 'purple';
+    case 'pending': return 'orange';    // Pending
+    case 'inprogress': return '#2196F3';   // InProgress - Blue
+    case 'completed': return '#4CAF50';   // Completed - Green
+    case 'cancelled': return '#F44336';   // Cancelled - Red
     default: return 'grey';
   }
 };

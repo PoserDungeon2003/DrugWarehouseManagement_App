@@ -51,7 +51,14 @@ export default function TabLayout() {
         name="(outbound)/index"
         options={{
           title: 'Xuất kho',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="arrow-up" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="(lot-transfer)/index"
+        options={{
+          title: 'Chuyển kho',
+          tabBarIcon: ({ color }) => <TabBarIcon name="exchange" color={color} />,
         }}
       />
     </Tabs>

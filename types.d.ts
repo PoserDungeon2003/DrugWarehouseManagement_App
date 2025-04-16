@@ -86,3 +86,18 @@ export interface LotTransferItem {
 }
 
 export type LotTransferResponse = PaginatedResponse<LotTransferItem>;
+
+export interface UserProfile {
+  id: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  roleId: number;
+  roleName: string;
+  status: string; // Consider using enum if status values are fixed
+  twoFactorEnabled: boolean;
+  phoneNumberConfirmed: boolean;
+  emailConfirmed: boolean;
+  accountSettings: any | null; // Replace 'any' with specific type if known
+}

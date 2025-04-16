@@ -4,9 +4,10 @@ import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
 
 export default function TabOneScreen() {
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
+      <Text style={styles.title}>Chào mừng </Text>
       <View style={styles.separator}/>
       <EditScreenInfo path="app/(tabs)/index.tsx" />
     </View>
