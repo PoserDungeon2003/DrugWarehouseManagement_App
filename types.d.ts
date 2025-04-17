@@ -12,6 +12,11 @@ export type UserStorageData = [
   ["role", string | null]
 ];
 
+export type User = {
+  token: string;
+  refreshToken: string;
+  role: string;
+}
 export interface OutboundDetail {
   outboundDetailsId: number;
   lotId: number;

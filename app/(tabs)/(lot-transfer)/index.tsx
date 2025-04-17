@@ -20,7 +20,7 @@ export default function LotTransfer() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const user = useGetUser();
-  const token = user?.data?.[0][1];
+  const token = user?.data?.token;
   const [refreshing, setRefreshing] = useState(false);
   const [queryParams, setQueryParams] = useState<Omit<LotTransferQueryPaging, "page" | "pageSize">>({
     search: searchQuery,

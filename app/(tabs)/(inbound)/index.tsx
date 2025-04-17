@@ -33,7 +33,7 @@ export default function Outbound() {
   const [showReportPending, setShowReportPending] = useState(false);
 
   const user = useGetUser();
-  const token = user?.data?.[0][1];
+  const token = user?.data?.token;
 
   // Query parameters state with debouncing
   const [queryParams, setQueryParams] = useState({

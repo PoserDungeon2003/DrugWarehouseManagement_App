@@ -5,7 +5,6 @@ import { formatVND } from "@/common/utils";
 import { useGetLotTransferById } from "@/hooks/useLotTransfer";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
-import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
@@ -17,14 +16,13 @@ import { useToast } from "react-native-paper-toast";
 export default function LotTransferDetails() {
   const { id } = useLocalSearchParams();
   const user = useGetUser();
-  const token = user?.data?.[0][1];
-  const queryClient = useQueryClient();
+  const token = user?.data?.token;
   const [approveDialogVisible, setApproveDialogVisible] = useState(false);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
 
-  const { data: lotTransfer, isLoading } = useGetLotTransferById(token || "", Number(id));
+  const { data: lotTransfer, isLoading, refetch } = useGetLotTransferById(token || "", Number(id));
 
   const handleApprove = async () => {
     try {
@@ -38,9 +36,7 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setApproveDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['lot-transfer']
-        });
+        await refetch();
         show({
           message: 'Phê duyệt phiếu chuyển kho thành công',
           type: 'success',
@@ -67,9 +63,7 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setCompleteDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['lot-transfer']
-        });
+        await refetch();
         show({
           message: 'Hoàn thành phiếu chuyển kho thành công',
           type: 'success',
@@ -93,9 +87,7 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setCancelDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['lot-transfer']
-        });
+        await refetch();
         show({
           message: 'Hủy phiếu chuyển kho thành công',
           type: 'success',

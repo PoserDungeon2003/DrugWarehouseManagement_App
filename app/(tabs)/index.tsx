@@ -14,7 +14,7 @@ import theme from '@/theme';
 
 export default function DashboardScreen() {
   const user = useGetUser();
-  const token = user.data?.[0][1]; // Access token
+  const token = user.data?.token; // Access token
   const { data: profile } = useGetProfile(token || '');
   const { data: inboundData, isLoading: inboundLoading } = useGetInbounds(token || "", {
     page: 1,

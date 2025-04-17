@@ -67,7 +67,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const user = useGetUser();
-  const token = user.data?.[0][1]; // Access token
+  const token = user.data?.token; // Access token
   const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {

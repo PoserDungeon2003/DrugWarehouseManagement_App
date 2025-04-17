@@ -1,10 +1,9 @@
 import api from "@/api";
-import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
+import { OUTBOUND_STATUS_TEXT } from "@/common/const";
 import { OutboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
-import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
@@ -16,14 +15,13 @@ import { useToast } from "react-native-paper-toast";
 export default function OutboundDetails() {
   const { id } = useLocalSearchParams();
   const user = useGetUser();
-  const token = user?.data?.[0][1];
-  const queryClient = useQueryClient();
+  const token = user?.data?.token;
   const [approveDialogVisible, setApproveDialogVisible] = useState(false);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
 
-  const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
+  const { data: outbound, isLoading, refetch } = useGetOutboundById(token || "", Number(id));
 
   // Calculate total amount
   const totalAmount = _.reduce(outbound?.outboundDetails,
@@ -41,9 +39,7 @@ export default function OutboundDetails() {
       })
       if (response) {
         setApproveDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['outbound']
-        });
+        await refetch();
         show({
           message: 'Phê duyệt phiếu xuất thành công',
           type: 'success',
@@ -69,9 +65,7 @@ export default function OutboundDetails() {
       })
       if (response) {
         setCompleteDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['outbound']
-        });
+        await refetch();
         show({
           message: 'Chuyển trạng thái phiếu xuất thành công',
           type: 'success',
@@ -97,9 +91,7 @@ export default function OutboundDetails() {
       })
       if (response) {
         setCancelDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['outbound']
-        });
+        await refetch();
         show({
           message: 'Hủy phiếu xuất thành công',
           type: 'success',

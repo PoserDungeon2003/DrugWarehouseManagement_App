@@ -23,7 +23,7 @@ export default function Outbound() {
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const user = useGetUser();
-  const token = user?.data?.[0][1];
+  const token = user?.data?.token;
   const { data: customerData } = useGetCustomers(token || "", {
     page: 1,
     pageSize: 5,
