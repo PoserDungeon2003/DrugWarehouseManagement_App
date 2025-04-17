@@ -4,12 +4,13 @@ import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { router } from "expo-router";
 import _ from "lodash";
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import { Badge, Button, Chip, DataTable, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LotTransferQueryPaging, SearchOutboundRequest } from "@/types";
 import { useGetLotTransfers } from "@/hooks/useLotTransfer";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LotTransfer() {
   const [page, setPage] = useState<number>(0);
@@ -22,6 +23,8 @@ export default function LotTransfer() {
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const user = useGetUser();
   const token = user?.data?.[0][1];
+  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
   const [queryParams, setQueryParams] = useState<Omit<LotTransferQueryPaging, "page" | "pageSize">>({
     search: searchQuery,
     dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
@@ -78,8 +81,23 @@ export default function LotTransfer() {
     setStatusFilter(null);
   };
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    queryClient.invalidateQueries({
+      queryKey: ['lot-transfer']
+    })
+    setRefreshing(false);
+  }, []);
+
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+    >
       <Surface style={styles.filterContainer} elevation={1}>
         {/* Search Input */}
         <TextInput
