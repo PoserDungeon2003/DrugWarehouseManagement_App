@@ -1,15 +1,14 @@
 import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
-import { OutboundStatus } from "@/common/enum";
 import { useGetOutbound } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { router } from "expo-router";
 import _ from "lodash";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
 import { Button, Chip, DataTable, Divider, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { QueryPaging, SearchOutboundRequest } from "@/types";
+import { SearchOutboundRequest } from "@/types";
 import { useGetCustomers } from "@/hooks/useCustomer";
 
 export default function Outbound() {
@@ -272,14 +271,17 @@ export default function Outbound() {
               mode="datetime"
               display="default"
               onChange={(event, selectedDate) => {
-                if (event.type === 'set' && selectedDate) {
+                setDatePickerVisible(null);
+                if (
+                  (event && event.type === 'set' && selectedDate) ||
+                  (event?.type === 'set' && selectedDate)
+                ) {
                   if (datePickerVisible === 'from') {
                     setDateFrom(selectedDate);
                   } else {
                     setDateTo(selectedDate);
                   }
                 }
-                setDatePickerVisible(null);
               }}
             />
           </Modal>

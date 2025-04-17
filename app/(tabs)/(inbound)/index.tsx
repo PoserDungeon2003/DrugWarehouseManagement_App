@@ -1,16 +1,13 @@
-import { INBOUND_STATUS_COLOR, INBOUND_STATUS_TEXT, OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
-import { InboundStatus, OutboundStatus } from "@/common/enum";
-import { useGetOutbound } from "@/hooks/useOutbound";
+import { INBOUND_STATUS_COLOR, INBOUND_STATUS_TEXT } from "@/common/const";
+import { InboundStatus } from "@/common/enum";
 import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { router } from "expo-router";
 import _ from "lodash";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View, StyleSheet, RefreshControl } from "react-native";
-import { Button, Card, Chip, DataTable, Divider, IconButton, Modal, Portal, Searchbar, Surface, Text, TextInput, Title } from "react-native-paper";
+import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Text } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { InboundQueryPaging, SearchOutboundRequest } from "@/types";
-import { useGetCustomers } from "@/hooks/useCustomer";
 import { useGetInbounds } from "@/hooks/useInbound";
 
 export function parseInboundStatus(status: string): InboundStatus {
@@ -221,14 +218,17 @@ export default function Outbound() {
               mode="date"
               display="default"
               onChange={(event, selectedDate) => {
-                if (event.type === 'set' && selectedDate) {
+                setDatePickerVisible(null);
+                if (
+                  (event && event.type === 'set' && selectedDate) ||
+                  (event?.type === 'set' && selectedDate)
+                ) {
                   if (datePickerVisible === 'from') {
                     setDateFrom(selectedDate);
                   } else {
                     setDateTo(selectedDate);
                   }
                 }
-                setDatePickerVisible(null);
               }}
             />
           </Modal>
