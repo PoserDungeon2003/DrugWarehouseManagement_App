@@ -70,9 +70,11 @@ function RootLayoutNav() {
   const token = user.data?.[0][1]; // Access token
   const { data: profile, isError } = useGetProfile(token || '');
 
-  // if (isError || !profile?.id) {
-  //   router.replace('/login');
-  // }
+  useEffect(() => {
+    if (isError) {
+      router.replace('/login');
+    }
+  }, [isError, profile]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>

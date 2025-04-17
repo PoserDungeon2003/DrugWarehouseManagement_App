@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
 import { Button, Chip, DataTable, Divider, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { SearchOutboundRequest } from "@/types";
+import { QueryPaging, SearchOutboundRequest } from "@/types";
 import { useGetCustomers } from "@/hooks/useCustomer";
 
 export default function Outbound() {
@@ -17,6 +17,8 @@ export default function Outbound() {
   const [numberOfItemsPerPageList] = useState([5, 10, 20, 50, 100]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchCustomerQuery, setSearchCustomerQuery] = useState('');
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
@@ -25,7 +27,8 @@ export default function Outbound() {
   const token = user?.data?.[0][1];
   const { data: customerData } = useGetCustomers(token || "", {
     page: 1,
-    pageSize: 100,
+    pageSize: 5,
+    search: searchCustomerQuery,
   })
   const [customerFilter, setCustomerFilter] = useState<number | null>(null);
   const [customersMenuVisible, setCustomersMenuVisible] = useState(false);
@@ -59,6 +62,17 @@ export default function Outbound() {
     };
   }, [searchQuery, dateFrom, dateTo, statusFilter, customerFilter]);
 
+  useEffect(() => {
+    const handler = _.debounce(() => {
+      setSearchCustomerQuery(customerSearchInput);
+    }, 400);
+
+    handler();
+
+    return () => {
+      handler.cancel();
+    };
+  }, [customerSearchInput])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -201,6 +215,14 @@ export default function Outbound() {
                 placeholder="Tìm kiếm khách hàng"
                 style={styles.customerSearchInput}
                 left={<TextInput.Icon icon="magnify" />}
+                value={customerSearchInput}
+                onChangeText={(e) => setCustomerSearchInput(e)}
+                right={customerSearchInput ? (
+                  <TextInput.Icon icon="close" onPress={() => {
+                    setCustomerSearchInput('')
+                    setSearchCustomerQuery('')
+                  }} />
+                ) : null}
               />
 
               <ScrollView style={styles.customersList}>

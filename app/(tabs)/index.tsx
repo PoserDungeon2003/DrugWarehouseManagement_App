@@ -9,7 +9,6 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Chào mừng </Text>
       <View style={styles.separator}/>
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
     </View>
   );
 }

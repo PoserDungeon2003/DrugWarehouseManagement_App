@@ -101,3 +101,69 @@ export interface UserProfile {
   emailConfirmed: boolean;
   accountSettings: any | null; // Replace 'any' with specific type if known
 }
+
+export interface InboundQueryPaging extends QueryPaging {
+  inboundStatus?: InboundStatus;
+  isReportPendingExist?: boolean;
+}
+
+export interface InboundDetail {
+  lotNumber: string;
+  productId: number;
+  productName: string;
+  openingStock: number;
+  manufacturingDate: string;
+  expiryDate: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+// Report assets (likely images or documents)
+export interface ReportAsset {
+  id?: number;
+  url: string;
+  fileName: string;
+}
+
+// Inbound report information
+export interface InboundReport {
+  inboundReportId: number;
+  problemDescription: string;
+  status: string; // Could be typed as enum if values are fixed
+  reportDate: string;
+  assets: ReportAsset[];
+}
+
+// Provider details
+export interface ProviderDetails {
+  providerId: number;
+  providerName: string;
+  address: string;
+  phoneNumber: string;
+  taxCode: string;
+  nationality: string | null;
+  email: string;
+  documentNumber: string;
+  documentIssueDate: string;
+  status: number; // Could be an enum
+}
+
+// Main inbound record
+export interface InboundItem {
+  inboundId: number;
+  inboundCode: string;
+  providerOrderCode: string;
+  warehouseId: number;
+  warehouseName: string;
+  createBy: string;
+  note: string | null;
+  inboundDate: string;
+  status: string; // Could use InboundStatus if you map the string to enum
+  inboundDetails: InboundDetail[];
+  report: InboundReport | null;
+  providerDetails: ProviderDetails;
+}
+
+// Complete response type using existing PaginatedResponse
+export type InboundResponse = PaginatedResponse<InboundItem>;

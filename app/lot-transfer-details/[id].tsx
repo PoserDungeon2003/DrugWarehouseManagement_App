@@ -30,7 +30,7 @@ export default function LotTransferDetails() {
     try {
       const response = await api.put(`/api/LotTransfer`, {
         lotTransferId: lotTransfer?.lotTransferId,
-        lotTransferStatus: 2
+        lotTransferStatus: LotTransferStatus.InProgress,
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ export default function LotTransferDetails() {
     try {
       const response = await api.put(`/api/LotTransfer`, {
         lotTransferId: lotTransfer?.lotTransferId,
-        lotTransferStatus: 3
+        lotTransferStatus: LotTransferStatus.Completed
       }, {
         headers: {
           Authorization: `Bearer ${token}`,

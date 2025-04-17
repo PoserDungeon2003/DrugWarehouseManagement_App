@@ -1,5 +1,6 @@
 import api from "@/api";
 import { OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
+import { OutboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
@@ -32,7 +33,7 @@ export default function OutboundDetails() {
   const handleApprove = async () => {
     try {
       const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 2
+        status: OutboundStatus.InProgress
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -60,7 +61,7 @@ export default function OutboundDetails() {
   const handleComplete = async () => {
     try {
       const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 4
+        status: OutboundStatus.Completed
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -88,7 +89,7 @@ export default function OutboundDetails() {
   const handleCancel = async () => {
     try {
       const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: 3
+        status: OutboundStatus.Cancelled
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
