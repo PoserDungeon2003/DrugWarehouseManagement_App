@@ -24,14 +24,13 @@ export default function LotTransfer() {
   const user = useGetUser();
   const token = user?.data?.[0][1];
   const [refreshing, setRefreshing] = useState(false);
-  const queryClient = useQueryClient();
   const [queryParams, setQueryParams] = useState<Omit<LotTransferQueryPaging, "page" | "pageSize">>({
     search: searchQuery,
     dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
     dateTo: dateTo ? dateTo.toISOString() : undefined,
     status: statusFilter?.toString(),
   });
-  const { data, isLoading, isError, error } = useGetLotTransfers(token || "", {
+  const { data, isLoading, refetch } = useGetLotTransfers(token || "", {
     ...queryParams,
     page: page + 1,
     pageSize: itemsPerPage,
@@ -81,11 +80,9 @@ export default function LotTransfer() {
     setStatusFilter(null);
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    queryClient.invalidateQueries({
-      queryKey: ['lot-transfer']
-    })
+    await refetch()
     setRefreshing(false);
   }, []);
 

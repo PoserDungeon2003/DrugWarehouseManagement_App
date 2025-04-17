@@ -1,4 +1,4 @@
-import { LotTransferStatus, OutboundStatus } from "./enum";
+import { InboundStatus, LotTransferStatus, OutboundStatus } from "./enum";
 
 export const OUTBOUND_STATUS_TEXT: Record<number, string> = {
   [OutboundStatus.Pending]: 'Đang chờ',
@@ -28,4 +28,19 @@ export const LOT_TRANSFER_STATUS_TEXT: Record<string, string> = {
   "inprogress": "Đang xử lý", // InProgress
   "completed": "Đã hoàn thành", // Completed
   "cancelled": "Đã hủy", // Cancelled
+};
+
+export const INBOUND_STATUS_TEXT = {
+  [InboundStatus.Pending]: "Đang chờ",
+  [InboundStatus.InProgress]: "Đang xử lý",
+  [InboundStatus.Completed]: "Đã hoàn thành", 
+  [InboundStatus.Cancelled]: "Đã hủy"
+};
+
+// Status color mapping
+export const INBOUND_STATUS_COLOR = {
+  [InboundStatus.Pending]: "#FF9800",     // Orange
+  [InboundStatus.InProgress]: "#2196F3",  // Blue  
+  [InboundStatus.Completed]: "#4CAF50",   // Green
+  [InboundStatus.Cancelled]: "#F44336",   // Red
 };
