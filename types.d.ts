@@ -1,4 +1,4 @@
-import { OutboundStatus } from "./common/enum";
+import { LotTransferStatus, OutboundStatus } from "./common/enum";
 
 export type LoginResponse = {
   token: string;
@@ -167,3 +167,7 @@ export interface InboundItem {
 
 // Complete response type using existing PaginatedResponse
 export type InboundResponse = PaginatedResponse<InboundItem>;
+
+export interface LotTransferQueryPaging extends QueryPaging {
+  status?: string;
+}

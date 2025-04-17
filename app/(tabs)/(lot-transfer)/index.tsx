@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
 import { Badge, Button, Chip, DataTable, IconButton, Modal, Portal, Surface, Text, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { SearchOutboundRequest } from "@/types";
+import { LotTransferQueryPaging, SearchOutboundRequest } from "@/types";
 import { useGetLotTransfers } from "@/hooks/useLotTransfer";
 
 export default function LotTransfer() {
@@ -22,7 +22,7 @@ export default function LotTransfer() {
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const user = useGetUser();
   const token = user?.data?.[0][1];
-  const [queryParams, setQueryParams] = useState<Omit<SearchOutboundRequest, "page" | "pageSize">>({
+  const [queryParams, setQueryParams] = useState<Omit<LotTransferQueryPaging, "page" | "pageSize">>({
     search: searchQuery,
     dateFrom: dateFrom ? dateFrom.toISOString() : undefined,
     dateTo: dateTo ? dateTo.toISOString() : undefined,

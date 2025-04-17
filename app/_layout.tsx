@@ -68,10 +68,10 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const user = useGetUser();
   const token = user.data?.[0][1]; // Access token
-  const { data: profile, isError } = useGetProfile(token || '');
+  const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {
-    if (isError) {
+    if (isError && error.message.includes("Unauthorized")) {
       router.replace('/login');
     }
   }, [isError, profile]);

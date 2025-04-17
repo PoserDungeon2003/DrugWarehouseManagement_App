@@ -1,9 +1,9 @@
 import api from "@/api";
 import { buildQueryString } from "@/common/utils";
-import { LotTransferItem, LotTransferResponse, QueryPaging } from "@/types";
+import { LotTransferItem, LotTransferQueryPaging, LotTransferResponse, QueryPaging } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 
-export const getLotTransfers = async (token: string, queryPaging: QueryPaging): Promise<LotTransferResponse> => {
+export const getLotTransfers = async (token: string, queryPaging: LotTransferQueryPaging): Promise<LotTransferResponse> => {
   const queryStrings = buildQueryString(queryPaging);
   return await api.get(`/api/LotTransfer${queryStrings}`, {
     headers: {
@@ -12,7 +12,7 @@ export const getLotTransfers = async (token: string, queryPaging: QueryPaging): 
   })
 }
 
-export const useGetLotTransfers = (token: string, queryPaging: QueryPaging) => {
+export const useGetLotTransfers = (token: string, queryPaging: LotTransferQueryPaging) => {
   return useQuery({
     queryKey: ['lot-transfer', queryPaging],
     queryFn: () => getLotTransfers(token, queryPaging),
