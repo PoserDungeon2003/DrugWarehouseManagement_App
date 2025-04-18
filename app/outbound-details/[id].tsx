@@ -4,6 +4,7 @@ import { OutboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
@@ -20,8 +21,9 @@ export default function OutboundDetails() {
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: outbound, isLoading, refetch } = useGetOutboundById(token || "", Number(id));
+  const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
 
   // Calculate total amount
   const totalAmount = _.reduce(outbound?.outboundDetails,
@@ -39,7 +41,9 @@ export default function OutboundDetails() {
       })
       if (response) {
         setApproveDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['outbound']
+        })
         show({
           message: 'Phê duyệt phiếu xuất thành công',
           type: 'success',
@@ -65,7 +69,9 @@ export default function OutboundDetails() {
       })
       if (response) {
         setCompleteDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['outbound']
+        })
         show({
           message: 'Chuyển trạng thái phiếu xuất thành công',
           type: 'success',
@@ -91,7 +97,9 @@ export default function OutboundDetails() {
       })
       if (response) {
         setCancelDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['outbound']
+        })
         show({
           message: 'Hủy phiếu xuất thành công',
           type: 'success',

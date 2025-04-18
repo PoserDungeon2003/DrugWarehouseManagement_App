@@ -5,6 +5,7 @@ import { formatVND } from "@/common/utils";
 import { useGetLotTransferById } from "@/hooks/useLotTransfer";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
@@ -21,8 +22,9 @@ export default function LotTransferDetails() {
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: lotTransfer, isLoading, refetch } = useGetLotTransferById(token || "", Number(id));
+  const { data: lotTransfer, isLoading } = useGetLotTransferById(token || "", Number(id));
 
   const handleApprove = async () => {
     try {
@@ -36,7 +38,9 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setApproveDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['lot-transfer']
+        })
         show({
           message: 'Phê duyệt phiếu chuyển kho thành công',
           type: 'success',
@@ -63,7 +67,9 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setCompleteDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['lot-transfer']
+        })
         show({
           message: 'Hoàn thành phiếu chuyển kho thành công',
           type: 'success',
@@ -87,7 +93,9 @@ export default function LotTransferDetails() {
       })
       if (response) {
         setCancelDialogVisible(false);
-        await refetch();
+        queryClient.invalidateQueries({
+          queryKey: ['lot-transfer']
+        })
         show({
           message: 'Hủy phiếu chuyển kho thành công',
           type: 'success',
