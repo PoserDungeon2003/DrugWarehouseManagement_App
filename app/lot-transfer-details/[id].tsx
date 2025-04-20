@@ -86,7 +86,10 @@ export default function LotTransferDetails() {
 
   const handleCancel = async () => {
     try {
-      const response = await api.post(`/api/LotTransfer/cancel/${lotTransfer?.lotTransferId}`, {}, {
+      const response = await api.put(`/api/LotTransfer`, {
+        lotTransferId: lotTransfer?.lotTransferId,
+        lotTransferStatus: LotTransferStatus.Cancelled,
+      }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

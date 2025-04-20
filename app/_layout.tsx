@@ -71,10 +71,10 @@ function RootLayoutNav() {
   const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {
-    if (isError && error.message.includes("Unauthorized")) {
+    if ((isError && error.message.includes("Unauthorized")) || !token) {
       router.replace('/login');
     }
-  }, [isError, profile]);
+  }, [isError, profile, user]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
