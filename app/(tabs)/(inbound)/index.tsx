@@ -239,9 +239,9 @@ export default function Outbound() {
       <Card style={styles.tableCard}>
         <DataTable>
           <DataTable.Header>
-            <DataTable.Title style={{ flex: 0.6 }}>Mã phiếu</DataTable.Title>
-            <DataTable.Title style={{ flex: 0.8 }}>Ngày tạo</DataTable.Title>
-            <DataTable.Title style={{ flex: 0.6 }}>Kho</DataTable.Title>
+            <DataTable.Title style={{ flex: 0.4 }}>ID</DataTable.Title>
+            <DataTable.Title style={{ flex: 1, justifyContent: 'flex-start' }}>Ngày nhập</DataTable.Title>
+            <DataTable.Title style={{ flex: 0.8 }}>Kho</DataTable.Title>
             <DataTable.Title style={{ justifyContent: 'flex-end' }}>Trạng thái</DataTable.Title>
           </DataTable.Header>
 
@@ -262,11 +262,11 @@ export default function Outbound() {
                       onPress={() => router.push(`/inbound-details/${item.inboundId}`)}
                       style={styles.dataRow}
                     >
-                      <DataTable.Cell style={{ flex: 0.6 }}>{item.inboundCode}</DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 0.8 }}>
+                      <DataTable.Cell style={{ flex: 0.4 }}>{item.inboundId}</DataTable.Cell>
+                      <DataTable.Cell style={{ flex: 1, justifyContent: 'flex-start' }}>
                         {item.inboundDate}
                       </DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 0.6 }}>{item.warehouseName}</DataTable.Cell>
+                      <DataTable.Cell style={{ flex: 0.8 }}>{item.warehouseName}</DataTable.Cell>
                       <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
                         <View style={[
                           styles.statusBadge,

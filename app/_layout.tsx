@@ -12,6 +12,7 @@ import { PaperProvider } from 'react-native-paper';
 import theme from '@/theme';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastProvider } from 'react-native-paper-toast';
+import { clearTokens } from '@/auth/authStorage';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -71,10 +72,11 @@ function RootLayoutNav() {
   const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {
-    if ((isError && error.message.includes("Unauthorized")) || !token) {
+    if ((isError && error.message.includes("Unauthorized"))) {
       router.replace('/login');
+      clearTokens();
     }
-  }, [isError, profile, user]);
+  }, [isError, error]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
@@ -91,6 +93,9 @@ function RootLayoutNav() {
               <Stack.Screen name='profile' options={{
                 title: 'Thông tin cá nhân',
                 headerBackButtonDisplayMode: 'minimal',
+              }} />
+              <Stack.Screen name='inbound-details/[id]' options={{
+                title: 'Chi tiết phiếu nhập',
               }} />
               <Stack.Screen name='outbound-details/[id]' options={{
                 title: 'Chi tiết phiếu xuất',

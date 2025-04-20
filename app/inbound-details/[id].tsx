@@ -1,441 +1,632 @@
 import api from "@/api";
-import { OUTBOUND_STATUS_TEXT } from "@/common/const";
-import { OutboundStatus } from "@/common/enum";
+import { INBOUND_STATUS_TEXT } from "@/common/const";
+import { InboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
-import { useGetOutboundById } from "@/hooks/useOutbound";
+import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useState } from "react";
-import { ScrollView, View, StyleSheet } from "react-native";
-import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, Portal, Text, Title } from "react-native-paper";
+import { ScrollView, View, StyleSheet, Linking } from "react-native";
+import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
-export default function OutboundDetails() {
+export default function InboundDetails() {
   const { id } = useLocalSearchParams();
   const user = useGetUser();
   const token = user?.data?.token;
-  const [approveDialogVisible, setApproveDialogVisible] = useState(false);
-  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
-  const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
-  const { show, hide } = useToast();
+  // const [approveDialogVisible, setApproveDialogVisible] = useState(false);
+  // const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  // const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
+  const { show } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
+  const { data: inbound, isLoading } = useGetInboundById(token || "", Number(id));
 
   // Calculate total amount
-  const totalAmount = _.reduce(outbound?.outboundDetails,
-    (sum, item) => sum + item.totalPrice, 0
-  );
+  const totalAmount = inbound?.inboundDetails?.reduce(
+    (sum, item) => sum + (item.totalPrice || 0), 0
+  ) || 0;
 
-  const handleApprove = async () => {
-    try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: OutboundStatus.InProgress
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (response) {
-        setApproveDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['inbounds']
-        })
-        show({
-          message: 'Phê duyệt phiếu xuất thành công',
-          type: 'success',
-        });
-      }
-    } catch (error: any) {
-      console.log('Error approving outbound: ', error);
-      show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi phê duyệt phiếu xuất',
-        type: 'error',
-      })
-    }
-  }
+  // Convert string status to number for proper handling
+  const getStatusNumber = (status?: string): InboundStatus => {
+    if (!status) return InboundStatus.Pending;
 
-  const handleComplete = async () => {
-    try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: OutboundStatus.Completed
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (response) {
-        setCompleteDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['inbounds']
-        })
-        show({
-          message: 'Chuyển trạng thái phiếu xuất thành công',
-          type: 'success',
-        });
-      }
-    } catch (error: any) {
-      console.log('Error approving outbound: ', error);
-      show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi chỉnh sửa phiếu xuất',
-        type: 'error',
-      })
+    switch (status.toLowerCase()) {
+      case 'pending': return InboundStatus.Pending;
+      case 'inprogress': return InboundStatus.InProgress;
+      case 'completed': return InboundStatus.Completed;
+      case 'cancelled': return InboundStatus.Cancelled;
+      default: return InboundStatus.Pending;
     }
-  }
+  };
 
-  const handleCancel = async () => {
-    try {
-      const response = await api.put(`/api/Outbound?id=${outbound?.outboundId}`, {
-        status: OutboundStatus.Cancelled
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      if (response) {
-        setCancelDialogVisible(false);
-        queryClient.invalidateQueries({
-          queryKey: ['inbounds']
-        })
-        show({
-          message: 'Hủy phiếu xuất thành công',
-          type: 'success',
-        });
-      }
-    } catch (error: any) {
-      console.log('Error approving outbound: ', error);
-      show({
-        message: error?.response?.data?.message || 'Đã xảy ra lỗi khi hủy phiếu xuất',
-        type: 'error',
-      })
+  const currentStatus = getStatusNumber(inbound?.status);
+
+  // const handleApprove = async () => {
+  //   try {
+  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+  //       inboundStatus: InboundStatus.InProgress
+  //     }, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     setApproveDialogVisible(false);
+
+  //     queryClient.invalidateQueries({
+  //       queryKey: ['inbound', Number(id)]
+  //     });
+
+  //     show({ message: 'Phê duyệt phiếu nhập thành công', type: 'success' });
+  //   } catch (error: any) {
+  //     console.error('Error approving inbound:', error);
+  //     show({
+  //       message: error?.response?.data?.message || 'Lỗi khi phê duyệt phiếu nhập',
+  //       type: 'error',
+  //     });
+  //   }
+  // };
+
+  // const handleComplete = async () => {
+  //   try {
+  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+  //       inboundStatus: InboundStatus.Completed
+  //     }, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     setCompleteDialogVisible(false);
+
+  //     queryClient.invalidateQueries({
+  //       queryKey: ['inbound', Number(id)]
+  //     });
+
+  //     show({ message: 'Hoàn thành phiếu nhập thành công', type: 'success' });
+  //   } catch (error: any) {
+  //     console.error('Error completing inbound:', error);
+  //     show({
+  //       message: error?.response?.data?.message || 'Lỗi khi hoàn thành phiếu nhập',
+  //       type: 'error',
+  //     });
+  //   }
+  // };
+
+  // const handleCancel = async () => {
+  //   try {
+  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+  //       inboundStatus: InboundStatus.Cancelled
+  //     }, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     setCancelDialogVisible(false);
+
+  //     queryClient.invalidateQueries({
+  //       queryKey: ['inbound', Number(id)]
+  //     });
+
+  //     show({ message: 'Hủy phiếu nhập thành công', type: 'success' });
+  //   } catch (error: any) {
+  //     console.error('Error cancelling inbound:', error);
+  //     show({
+  //       message: error?.response?.data?.message || 'Lỗi khi hủy phiếu nhập',
+  //       type: 'error',
+  //     });
+  //   }
+  // };
+
+  const openReport = () => {
+    if (inbound?.report) {
+      // Navigate to a report details screen or show modal
     }
-  }
+  };
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
+        <Text style={{ marginTop: 16 }}>Đang tải thông tin...</Text>
       </View>
     );
   }
+
   return (
     <>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
-          {/* Header Section */}
-          <Card style={styles.card}>
+      <ScrollView style={styles.container}>
+        {/* Basic Information Card */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.headerRow}>
+              <View>
+                <Text variant="titleLarge" style={styles.inboundCode}>
+                  {inbound?.inboundCode}
+                </Text>
+                <Text variant="bodyMedium" style={styles.dateText}>
+                  {inbound?.inboundDate}
+                </Text>
+              </View>
+              <Badge
+                size={28}
+                style={{
+                  backgroundColor: getStatusColor(currentStatus),
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: 12,
+                  paddingHorizontal: 8,
+                }}
+              >
+                {INBOUND_STATUS_TEXT[currentStatus]}
+              </Badge>
+            </View>
+
+            <Divider style={styles.divider} />
+
+            <View style={styles.infoGrid}>
+              <View style={styles.infoColumn}>
+                <InfoItem label="Kho nhập" value={inbound?.warehouseName} />
+                <InfoItem label="Người tạo" value={inbound?.createBy} />
+              </View>
+
+              <View style={styles.infoColumn}>
+                {inbound?.report && (
+                  <View style={styles.reportBadge}>
+                    <Badge
+                      size={24}
+                      style={{ backgroundColor: '#FF9800' }}
+                    >!</Badge>
+                    <Button
+                      onPress={openReport}
+                      compact
+                      style={{ marginLeft: 4 }}
+                    >
+                      Xem báo cáo sự cố
+                    </Button>
+                  </View>
+                )}
+                {inbound?.providerOrderCode && (
+                  <InfoItem
+                    label="Mã đơn hàng"
+                    value={inbound.providerOrderCode}
+                  />
+                )}
+              </View>
+            </View>
+
+            {inbound?.note && (
+              <>
+                <Divider style={[styles.divider, { marginTop: 8 }]} />
+                <Text variant="bodyMedium" style={styles.noteLabel}>Ghi chú:</Text>
+                <Text style={styles.noteText}>{inbound.note}</Text>
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Provider Information Card */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionHeader}>
+              <Text variant="titleMedium">Thông tin nhà cung cấp</Text>
+              <IconButton
+                icon="phone"
+                size={20}
+                mode="contained"
+                containerColor="#E3F2FD"
+                iconColor="#1976D2"
+                onPress={() => Linking.openURL(`tel:${inbound?.providerDetails?.phoneNumber}`)}
+              />
+            </View>
+
+            <Divider style={styles.divider} />
+
+            <Text variant="titleSmall" style={styles.providerName}>
+              {inbound?.providerDetails?.providerName}
+            </Text>
+
+            <View style={styles.infoGrid}>
+              <View style={styles.infoColumn}>
+                <InfoItem
+                  label="Số điện thoại"
+                  value={inbound?.providerDetails?.phoneNumber}
+                />
+                <InfoItem
+                  label="Email"
+                  value={inbound?.providerDetails?.email}
+                />
+                <InfoItem
+                  label="Mã số thuế"
+                  value={inbound?.providerDetails?.taxCode}
+                />
+              </View>
+
+              <View style={styles.infoColumn}>
+                <InfoItem
+                  label="Số chứng từ"
+                  value={inbound?.providerDetails?.documentNumber}
+                />
+                <InfoItem
+                  label="Ngày chứng từ"
+                  value={inbound?.providerDetails?.documentIssueDate ?
+                    format(new Date(inbound.providerDetails.documentIssueDate), "dd/MM/yyyy") : ""
+                  }
+                />
+              </View>
+            </View>
+
+            <Text variant="bodyMedium" style={styles.addressLabel}>Địa chỉ:</Text>
+            <Text style={styles.addressText}>{inbound?.providerDetails?.address}</Text>
+          </Card.Content>
+        </Card>
+
+        {/* Products Table Card */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text variant="titleMedium">Chi tiết sản phẩm</Text>
+            <Divider style={styles.divider} />
+
+            {!inbound?.inboundDetails || inbound.inboundDetails.length === 0 ? (
+              <Text style={styles.emptyText}>Không có sản phẩm nào</Text>
+            ) : (
+              <>
+                <DataTable>
+                  <DataTable.Header>
+                    <DataTable.Title style={{ flex: 2.5 }}>Sản phẩm</DataTable.Title>
+                    <DataTable.Title style={{ flex: 1 }}>Lô</DataTable.Title>
+                    <DataTable.Title numeric style={{ flex: 0.8 }}>SL</DataTable.Title>
+                    <DataTable.Title numeric style={{ flex: 1 }}>Đơn giá</DataTable.Title>
+                    <DataTable.Title numeric style={{ flex: 1.2 }}>Tổng</DataTable.Title>
+                  </DataTable.Header>
+
+                  {inbound.inboundDetails.map((item, index) => (
+                    <DataTable.Row key={index}>
+                      <DataTable.Cell style={{ flex: 2.5 }}>
+                        <View>
+                          <Text>{item.productName}</Text>
+                          <View style={styles.dateRow}>
+                            {item.manufacturingDate && (
+                              <Text style={styles.mfgDate}>
+                                NSX: {format(new Date(item.manufacturingDate), "dd/MM/yyyy")}
+                              </Text>
+                            )}
+                            {item.expiryDate && (
+                              <Text style={styles.expDate}>
+                                HSD: {format(new Date(item.expiryDate), "dd/MM/yyyy")}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </DataTable.Cell>
+                      <DataTable.Cell style={{ flex: 1 }}>{item.lotNumber}</DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 0.8 }}>
+                        <Text>{item.quantity}</Text>
+                        {item.openingStock !== undefined && (
+                          <Text style={styles.openingStock}>
+                            Tồn: {item.openingStock}
+                          </Text>
+                        )}
+                      </DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 1 }}>
+                        {formatVND(item.unitPrice)}
+                      </DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 1.2 }}>
+                        {formatVND(item.totalPrice)}
+                      </DataTable.Cell>
+                    </DataTable.Row>
+                  ))}
+                </DataTable>
+
+                <View style={styles.totalContainer}>
+                  <Text variant="titleMedium">Tổng cộng:</Text>
+                  <Text variant="titleMedium" style={styles.totalAmount}>
+                    {formatVND(totalAmount)}
+                  </Text>
+                </View>
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Report Section (if exists) */}
+        {inbound?.report && (
+          <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]}>
             <Card.Content>
-              <View style={styles.headerRow}>
-                <Title>Chi tiết phiếu xuất</Title>
+              <View style={styles.reportHeader}>
+                <Text variant="titleMedium">Báo cáo sự cố</Text>
                 <Badge
-                  size={32}
+                  size={24}
                   style={{
-                    backgroundColor: getStatusColor(outbound?.status),
-                    paddingHorizontal: 8,
-                    fontWeight: 'semibold',
+                    backgroundColor: inbound.report.status.toLowerCase() === 'pending' ?
+                      '#FF9800' : '#4CAF50',
+                    color: 'white'
                   }}
                 >
-                  {OUTBOUND_STATUS_TEXT[outbound?.status || 0]}
+                  {inbound.report.status.toLowerCase() === 'pending' ?
+                    'Đang chờ xử lý' : 'Đã xử lý'}
                 </Badge>
               </View>
 
               <Divider style={styles.divider} />
 
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Mã phiếu:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.outboundCode}</Text>
-              </View>
+              <Text style={styles.reportLabel}>Mô tả sự cố:</Text>
+              <Text style={styles.reportText}>
+                {inbound.report.problemDescription}
+              </Text>
 
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Ngày xuất:</Text>
-                <Text variant="bodyLarge" style={styles.value}>
-                  {format(new Date(outbound?.outboundDate || new Date()), "dd/MM/yyyy HH:mm")}
-                </Text>
-              </View>
+              <Text style={styles.reportDate}>
+                Báo cáo ngày: {inbound.report.reportDate}
+              </Text>
 
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Tổng tiền:</Text>
-                <Text variant="bodyLarge" style={styles.value}>
-                  {formatVND(totalAmount)}
-                </Text>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Customer Information */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Thông tin khách hàng</Title>
-              <Divider style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Khách hàng:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.customerName}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.phoneNumber}</Text>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Receiver Information */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Thông tin người nhận</Title>
-              <Divider style={styles.divider} />
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Tên người nhận:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverName}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverPhone}</Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>Địa chỉ:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverAddress}</Text>
-              </View>
-
-              {outbound?.note && (
-                <View style={styles.infoRow}>
-                  <Text variant="bodyMedium" style={styles.label}>Ghi chú:</Text>
-                  <Text variant="bodyLarge" style={styles.value}>{outbound.note}</Text>
+              {inbound.report.assets && inbound.report.assets.length > 0 && (
+                <View style={styles.attachmentsContainer}>
+                  <Text style={styles.attachmentsLabel}>Tệp đính kèm:</Text>
+                  <View style={styles.attachmentsList}>
+                    {inbound.report.assets.map((asset, index) => (
+                      <Button
+                        key={index}
+                        icon="file-document"
+                        mode="outlined"
+                        style={styles.attachmentButton}
+                        onPress={() => Linking.openURL(asset.url)}
+                      >
+                        {asset.fileName}
+                      </Button>
+                    ))}
+                  </View>
                 </View>
               )}
             </Card.Content>
           </Card>
-
-          {/* Product Details */}
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Chi tiết sản phẩm</Title>
-              <Divider style={styles.divider} />
-
-              <DataTable>
-                <DataTable.Header>
-                  <DataTable.Title>Sản phẩm</DataTable.Title>
-                  <DataTable.Title numeric>SL</DataTable.Title>
-                  <DataTable.Title numeric>Đơn giá</DataTable.Title>
-                  <DataTable.Title numeric>Thành tiền</DataTable.Title>
-                </DataTable.Header>
-
-                {outbound?.outboundDetails.map((detail) => (
-                  <DataTable.Row key={detail.outboundDetailsId}>
-                    <DataTable.Cell>
-                      <Text variant="bodyMedium">{detail.productName}</Text>
-                      <Text variant="bodySmall">{detail.lotNumber} - {detail.unitType}</Text>
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric>{detail.quantity}</DataTable.Cell>
-                    <DataTable.Cell numeric>
-                      {formatVND(detail.unitPrice)}
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric>
-                      {formatVND(detail.totalPrice)}
-                    </DataTable.Cell>
-                  </DataTable.Row>
-                ))}
-
-                <DataTable.Row style={styles.totalRow}>
-                  <DataTable.Cell><Text variant="bodyLarge">Tổng cộng</Text></DataTable.Cell>
-                  <DataTable.Cell numeric>
-                    <Text variant="bodyLarge" style={styles.totalAmount}>
-                      {formatVND(totalAmount)}
-                    </Text>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              </DataTable>
-            </Card.Content>
-          </Card>
-          <Card style={styles.card}>
-            <Card.Content>
-              <Title>Thao tác</Title>
-              <Divider style={styles.divider} />
-              <View style={styles.buttonContainer}>
-                {outbound?.status === 1 ? (
-                  <>
-                    <Button
-                      mode="contained"
-                      onPress={() => setApproveDialogVisible(true)}
-                      style={[styles.actionButton, styles.approveButton]}
-                      icon="check-circle"
-                    >
-                      Phê duyệt
-                    </Button>
-                    <Button
-                      mode="contained"
-                      onPress={() => setCancelDialogVisible(true)}
-                      style={[styles.actionButton, styles.cancelButton]}
-                      icon="cancel"
-                    >
-                      Hủy phiếu
-                    </Button>
-                  </>
-                ) : outbound?.status == 2 ? (
-                  <>
-                    <Button
-                      mode="contained"
-                      onPress={() => setCompleteDialogVisible(true)}
-                      style={[styles.actionButton, styles.approveButton]}
-                      icon="check-circle"
-                    >
-                      Hoàn thành
-                    </Button>
-                    <Button
-                      mode="contained"
-                      onPress={() => setCancelDialogVisible(true)}
-                      style={[styles.actionButton, styles.cancelButton]}
-                      icon="cancel"
-                    >
-                      Hủy phiếu
-                    </Button>
-                  </>
-                ) : (
-                  null
-                )}
-              </View>
-            </Card.Content>
-          </Card>
-        </View>
+        )}
       </ScrollView>
-      <Portal>
+
+      {/* Approval Dialog */}
+      {/* <Portal>
         <Dialog visible={approveDialogVisible} onDismiss={() => setApproveDialogVisible(false)}>
-          <Dialog.Title>Xác nhận phê duyệt</Dialog.Title>
+          <Dialog.Title>Phê duyệt phiếu nhập</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn phê duyệt phiếu xuất này?
+            <Text>Bạn có chắc chắn muốn phê duyệt phiếu nhập này?</Text>
+            <Text style={{ marginTop: 8, fontStyle: 'italic' }}>
+              Khi phê duyệt, phiếu sẽ chuyển sang trạng thái "Đang xử lý".
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setApproveDialogVisible(false)}>Hủy bỏ</Button>
-            <Button
-              mode="contained"
-              onPress={handleApprove}
-              disabled={isLoading}
-            >
-              Xác nhận
-            </Button>
+            <Button onPress={() => setApproveDialogVisible(false)}>Hủy</Button>
+            <Button mode="contained" onPress={handleApprove}>Xác nhận</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
-      <Portal>
+      </Portal> */}
+
+      {/* Complete Dialog */}
+      {/* <Portal>
         <Dialog visible={completeDialogVisible} onDismiss={() => setCompleteDialogVisible(false)}>
-          <Dialog.Title>Xác nhận hoàn thành</Dialog.Title>
+          <Dialog.Title>Hoàn thành phiếu nhập</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn đánh dấu phiếu xuất này đã hoàn thành?
+            <Text>Bạn có chắc chắn muốn hoàn thành phiếu nhập này?</Text>
+            <Text style={{ marginTop: 8, fontStyle: 'italic' }}>
+              Khi hoàn thành, sản phẩm sẽ được thêm vào kho và không thể chỉnh sửa phiếu.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setCompleteDialogVisible(false)}>Hủy bỏ</Button>
-            <Button
-              mode="contained"
-              onPress={handleComplete}
-              disabled={isLoading}
-            >
-              Xác nhận
-            </Button>
+            <Button onPress={() => setCompleteDialogVisible(false)}>Hủy</Button>
+            <Button mode="contained" onPress={handleComplete}>Xác nhận</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
+      </Portal> */}
 
       {/* Cancel Dialog */}
-      <Portal>
+      {/* <Portal>
         <Dialog visible={cancelDialogVisible} onDismiss={() => setCancelDialogVisible(false)}>
-          <Dialog.Title>Xác nhận hủy phiếu</Dialog.Title>
+          <Dialog.Title>Hủy phiếu nhập</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">
-              Bạn có chắc chắn muốn hủy phiếu xuất này?
+            <Text>Bạn có chắc chắn muốn hủy phiếu nhập này?</Text>
+            <Text style={{ marginTop: 8, fontStyle: 'italic', color: '#D32F2F' }}>
+              Hành động này không thể hoàn tác.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setCancelDialogVisible(false)}>Trở lại</Button>
+            <Button onPress={() => setCancelDialogVisible(false)}>Quay lại</Button>
             <Button
               mode="contained"
+              buttonColor="#D32F2F"
+              textColor="white"
               onPress={handleCancel}
-              buttonColor="#f44336"
             >
-              Xác nhận hủy
+              Hủy phiếu
             </Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
+      </Portal> */}
     </>
   );
 }
 
+// Helper component for consistent info display
+function InfoItem({ label, value }: { label: string, value?: string | null }) {
+  if (!value) return null;
+
+  return (
+    <View style={styles.infoItem}>
+      <Text variant="bodySmall" style={styles.infoLabel}>{label}</Text>
+      <Text variant="bodyMedium" style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function getStatusColor(status: InboundStatus): string {
+  switch (status) {
+    case InboundStatus.Pending:
+      return '#FF9800';
+    case InboundStatus.InProgress:
+      return '#2196F3';
+    case InboundStatus.Completed:
+      return '#4CAF50';
+    case InboundStatus.Cancelled:
+      return '#F44336';
+    default:
+      return '#757575';
+  }
+}
+
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
   container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
+    backgroundColor: 'white',
+    elevation: 2,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    marginLeft: 'auto',
   },
   card: {
-    marginBottom: 16,
-    elevation: 4,
+    margin: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  inboundCode: {
+    fontWeight: 'bold',
+  },
+  dateText: {
+    color: '#666',
+    marginTop: 4,
   },
   divider: {
     marginVertical: 12,
   },
-  infoRow: {
+  infoGrid: {
     flexDirection: 'row',
-    marginBottom: 8,
+    justifyContent: 'space-between',
   },
-  label: {
-    width: '35%',
+  infoColumn: {
+    flex: 1,
+  },
+  infoItem: {
+    marginBottom: 12,
+  },
+  infoLabel: {
     color: '#666',
   },
-  value: {
-    flex: 1,
+  infoValue: {
     fontWeight: '500',
   },
-  totalRow: {
+  noteLabel: {
+    color: '#666',
+    marginBottom: 4,
+  },
+  noteText: {
+    fontStyle: 'italic',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  providerName: {
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  addressLabel: {
+    color: '#666',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  addressText: {
+    marginBottom: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
+    color: '#666',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  mfgDate: {
+    fontSize: 12,
+    color: '#1976D2',
+  },
+  expDate: {
+    fontSize: 12,
+    color: '#FF9800',
+  },
+  openingStock: {
+    fontSize: 10,
+    color: '#757575',
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    backgroundColor: '#f5f5f5',
   },
   totalAmount: {
     fontWeight: 'bold',
     color: '#006064',
+    marginLeft: 8,
   },
-  buttonContainer: {
+  reportHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reportLabel: {
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  reportText: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  reportDate: {
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+  },
+  attachmentsContainer: {
     marginTop: 12,
   },
-  actionButton: {
-    minWidth: 120,
-    margin: 8,
+  attachmentsLabel: {
+    fontWeight: '500',
+    marginBottom: 8,
   },
-  approveButton: {
-    backgroundColor: '#4CAF50', // Green
+  attachmentsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  cancelButton: {
-    backgroundColor: '#F44336', // Red
+  attachmentButton: {
+    marginBottom: 8,
+  },
+  reportBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
 });
-
-const getStatusColor = (status?: number): string => {
-  switch (status) {
-    case 1: return 'orange';
-    case 2: return 'blue';
-    case 3: return 'red';
-    case 4: return 'green';
-    case 5: return 'purple';
-    default: return 'grey';
-  }
-};
