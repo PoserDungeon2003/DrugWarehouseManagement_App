@@ -4,13 +4,14 @@ import { InboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
 import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
+import { InboundDetail } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useState } from "react";
 import { ScrollView, View, StyleSheet, Linking } from "react-native";
-import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Portal, Text } from "react-native-paper";
+import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
 export default function InboundDetails() {
@@ -20,6 +21,9 @@ export default function InboundDetails() {
   // const [approveDialogVisible, setApproveDialogVisible] = useState(false);
   // const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   // const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<InboundDetail | null>(null);
+  const [productModalVisible, setProductModalVisible] = useState(false);
+
   const { show } = useToast();
   const queryClient = useQueryClient();
 
@@ -121,6 +125,11 @@ export default function InboundDetails() {
     if (inbound?.report) {
       // Navigate to a report details screen or show modal
     }
+  };
+
+  const showProductDetails = (product: InboundDetail) => {
+    setSelectedProduct(product);
+    setProductModalVisible(true);
   };
 
   if (isLoading) {
@@ -272,47 +281,31 @@ export default function InboundDetails() {
               <>
                 <DataTable>
                   <DataTable.Header>
-                    <DataTable.Title style={{ flex: 2.5 }}>Sản phẩm</DataTable.Title>
-                    <DataTable.Title style={{ flex: 1 }}>Lô</DataTable.Title>
-                    <DataTable.Title numeric style={{ flex: 0.8 }}>SL</DataTable.Title>
+                    <DataTable.Title style={{ flex: 2 }}>Sản phẩm</DataTable.Title>
+                    <DataTable.Title style={{ flex: 0.8 }}>Lô</DataTable.Title>
+                    <DataTable.Title numeric style={{ flex: 0.5 }}>SL</DataTable.Title>
                     <DataTable.Title numeric style={{ flex: 1 }}>Đơn giá</DataTable.Title>
-                    <DataTable.Title numeric style={{ flex: 1.2 }}>Tổng</DataTable.Title>
+                    <DataTable.Title numeric style={{ flex: 1 }}>Tổng</DataTable.Title>
                   </DataTable.Header>
 
                   {inbound.inboundDetails.map((item, index) => (
-                    <DataTable.Row key={index}>
-                      <DataTable.Cell style={{ flex: 2.5 }}>
-                        <View>
-                          <Text>{item.productName}</Text>
-                          <View style={styles.dateRow}>
-                            {item.manufacturingDate && (
-                              <Text style={styles.mfgDate}>
-                                NSX: {format(new Date(item.manufacturingDate), "dd/MM/yyyy")}
-                              </Text>
-                            )}
-                            {item.expiryDate && (
-                              <Text style={styles.expDate}>
-                                HSD: {format(new Date(item.expiryDate), "dd/MM/yyyy")}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
+                    <DataTable.Row
+                      key={index}
+                      onPress={() => showProductDetails(item)}
+                      style={styles.dataRow}
+                    >
+                      <DataTable.Cell style={{ flex: 2 }}>
+                        <Text
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {item.productName}
+                        </Text>
                       </DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 1 }}>{item.lotNumber}</DataTable.Cell>
-                      <DataTable.Cell numeric style={{ flex: 0.8 }}>
-                        <Text>{item.quantity}</Text>
-                        {item.openingStock !== undefined && (
-                          <Text style={styles.openingStock}>
-                            Tồn: {item.openingStock}
-                          </Text>
-                        )}
-                      </DataTable.Cell>
-                      <DataTable.Cell numeric style={{ flex: 1 }}>
-                        {formatVND(item.unitPrice)}
-                      </DataTable.Cell>
-                      <DataTable.Cell numeric style={{ flex: 1.2 }}>
-                        {formatVND(item.totalPrice)}
-                      </DataTable.Cell>
+                      <DataTable.Cell style={{ flex: 0.8 }}>{item.lotNumber}</DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 0.5 }}>{item.quantity}</DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 1.3 }}>{formatVND(item.unitPrice)}</DataTable.Cell>
+                      <DataTable.Cell numeric style={{ flex: 1 }}>{formatVND(item.totalPrice)}</DataTable.Cell>
                     </DataTable.Row>
                   ))}
                 </DataTable>
@@ -438,7 +431,108 @@ export default function InboundDetails() {
           </Dialog.Actions>
         </Dialog>
       </Portal> */}
+
+      <Portal>
+        <Modal
+          visible={productModalVisible}
+          onDismiss={() => setProductModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          {selectedProduct && (
+            <Card>
+              <Card.Content>
+                <View style={styles.modalHeader}>
+                  <Text variant="titleMedium">Chi tiết sản phẩm</Text>
+                  <IconButton
+                    icon="close"
+                    size={20}
+                    onPress={() => setProductModalVisible(false)}
+                  />
+                </View>
+
+                <Divider style={styles.divider} />
+
+                <Text variant="titleSmall" style={styles.productTitle}>
+                  {selectedProduct.productName}
+                </Text>
+
+                <View style={styles.productInfoGrid}>
+                  <View style={styles.productInfoColumn}>
+                    <ProductInfoItem
+                      label="Mã sản phẩm"
+                      value={selectedProduct.productId?.toString() || "—"}
+                    />
+                    <ProductInfoItem
+                      label="Số lô"
+                      value={selectedProduct.lotNumber}
+                    />
+                    <ProductInfoItem
+                      label="Số lượng"
+                      value={selectedProduct.quantity.toString()}
+                    />
+                    {selectedProduct.openingStock !== null && selectedProduct.openingStock !== undefined && (
+                      <ProductInfoItem
+                        label="Tồn kho ban đầu"
+                        value={selectedProduct.openingStock.toString()}
+                      />
+                    )}
+                  </View>
+
+                  <View style={styles.productInfoColumn}>
+                    {selectedProduct.manufacturingDate && (
+                      <ProductInfoItem
+                        label="Ngày sản xuất"
+                        value={format(new Date(selectedProduct.manufacturingDate), "dd/MM/yyyy")}
+                      />
+                    )}
+                    {selectedProduct.expiryDate && (
+                      <ProductInfoItem
+                        label="Hạn sử dụng"
+                        value={format(new Date(selectedProduct.expiryDate), "dd/MM/yyyy")}
+                      />
+                    )}
+                    <ProductInfoItem
+                      label="Đơn giá"
+                      value={formatVND(selectedProduct.unitPrice)}
+                    />
+                    <ProductInfoItem
+                      label="Thành tiền"
+                      value={formatVND(selectedProduct.totalPrice)}
+                      highlight
+                    />
+                  </View>
+                </View>
+              </Card.Content>
+            </Card>
+          )}
+        </Modal>
+      </Portal>
     </>
+  );
+}
+
+function ProductInfoItem({
+  label,
+  value,
+  highlight = false
+}: {
+  label: string,
+  value: string,
+  highlight?: boolean
+}) {
+  return (
+    <View style={styles.productInfoItem}>
+      <Text variant="bodySmall" style={styles.productInfoLabel}>{label}</Text>
+      <Text
+        variant="bodyMedium"
+        style={[
+          styles.productInfoValue,
+          highlight && styles.highlightedValue
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -558,9 +652,8 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   dateRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    minHeight: 70, // Ensure rows are tall enough for wrapped text
+    paddingVertical: 8,
   },
   mfgDate: {
     fontSize: 12,
@@ -628,5 +721,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  productName: {
+    flexShrink: 1,
+    marginRight: 4,
+  },
+  modalContainer: {
+    padding: 16,
+    marginHorizontal: 20,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productTitle: {
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  productInfoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  productInfoColumn: {
+    flex: 1,
+  },
+  productInfoItem: {
+    marginBottom: 12,
+  },
+  productInfoLabel: {
+    color: '#666',
+    marginBottom: 2,
+  },
+  productInfoValue: {
+    fontWeight: '500',
+  },
+  highlightedValue: {
+    color: '#006064',
+    fontWeight: 'bold',
+  },
+  dataRow: {
+    minHeight: 50,
+    paddingVertical: 4,
   },
 });

@@ -1,8 +1,8 @@
-import { ScrollView, StyleSheet } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useGetProfile, useGetUser } from '@/hooks/useUser';
 import { ActivityIndicator, Avatar, Button, Card, DataTable, IconButton, Surface, Title } from 'react-native-paper';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useGetLotTransfers } from '@/hooks/useLotTransfer';
 import { useGetOutbound } from '@/hooks/useOutbound';
 import { useGetInbounds } from '@/hooks/useInbound';
@@ -13,22 +13,24 @@ import { LotTransferStatus } from '@/common/enum';
 import theme from '@/theme';
 
 export default function DashboardScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+
   const user = useGetUser();
   const token = user.data?.token; // Access token
   const { data: profile } = useGetProfile(token || '');
-  const { data: inboundData, isLoading: inboundLoading } = useGetInbounds(token || "", {
+  const { data: inboundData, isLoading: inboundLoading, refetch: refetchInbound } = useGetInbounds(token || "", {
     page: 1,
     pageSize: 5,
     inboundStatus: 'pending',
   });
 
-  const { data: outboundData, isLoading: outboundLoading } = useGetOutbound(token || "", {
+  const { data: outboundData, isLoading: outboundLoading, refetch: refetchOutbound } = useGetOutbound(token || "", {
     page: 1,
     pageSize: 5,
     status: "pending"
   });
 
-  const { data: transferData, isLoading: transferLoading } = useGetLotTransfers(token || "", {
+  const { data: transferData, isLoading: transferLoading, refetch: refetchLotTransfer } = useGetLotTransfers(token || "", {
     page: 1,
     pageSize: 5,
     status: LotTransferStatus.Pending.toString(),
@@ -86,6 +88,14 @@ export default function DashboardScreen() {
   const pendingOutbounds = outboundData?.items.length || 0;
   const pendingTransfers = transferData?.items.length || 0;
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetchInbound();
+    await refetchOutbound();
+    await refetchLotTransfer();
+    setRefreshing(false);
+  }, []);
+
   const pendingTasksCount = pendingInbounds + pendingOutbounds + pendingTransfers;
   if (inboundLoading || outboundLoading || transferLoading) {
     return (
@@ -97,7 +107,12 @@ export default function DashboardScreen() {
     );
   }
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* Welcome Card */}
       <Card style={styles.welcomeCard}>
         <Card.Content style={styles.welcomeContent}>
@@ -228,7 +243,7 @@ export default function DashboardScreen() {
                   onPress={() => {
                     switch (activity.type) {
                       case 'inbound':
-                        // router.push(`/inbound-details/${activity.id}`);
+                        router.push(`/inbound-details/${activity.id}`);
                         break;
                       case 'outbound':
                         router.push(`/outbound-details/${activity.id}`);
@@ -288,7 +303,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    padding: 16,
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -408,6 +423,8 @@ const styles = StyleSheet.create({
   activityStatus: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 4,
+    borderRadius: 4,
   },
   statusDot: {
     width: 8,
