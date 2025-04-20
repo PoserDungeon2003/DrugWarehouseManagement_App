@@ -74,7 +74,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if ((isError && error.message.includes("Unauthorized"))) {
       router.replace('/login');
-      clearTokens();
+      Promise.resolve(clearTokens());
     }
   }, [isError, error]);
 

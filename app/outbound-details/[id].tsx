@@ -4,13 +4,14 @@ import { OutboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
+import { OutboundDetail } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useState } from "react";
 import { ScrollView, View, StyleSheet } from "react-native";
-import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, Portal, Text, Title } from "react-native-paper";
+import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
 export default function OutboundDetails() {
@@ -20,6 +21,9 @@ export default function OutboundDetails() {
   const [approveDialogVisible, setApproveDialogVisible] = useState(false);
   const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<OutboundDetail | null>(null);
+  const [productModalVisible, setProductModalVisible] = useState(false);
+
   const { show, hide } = useToast();
   const queryClient = useQueryClient();
 
@@ -29,6 +33,11 @@ export default function OutboundDetails() {
   const totalAmount = _.reduce(outbound?.outboundDetails,
     (sum, item) => sum + item.totalPrice, 0
   );
+
+  const showProductDetails = (product: OutboundDetail) => {
+    setSelectedProduct(product);
+    setProductModalVisible(true);
+  };
 
   const handleApprove = async () => {
     try {
@@ -228,7 +237,11 @@ export default function OutboundDetails() {
                 </DataTable.Header>
 
                 {outbound?.outboundDetails.map((detail) => (
-                  <DataTable.Row key={detail.outboundDetailsId}>
+                  <DataTable.Row
+                    key={detail.outboundDetailsId}
+                    onPress={() => showProductDetails(detail)}
+                    style={styles.dataRow}
+                  >
                     <DataTable.Cell>
                       <Text variant="bodyMedium">{detail.productName}</Text>
                       <Text variant="bodySmall">{detail.lotNumber} - {detail.unitType}</Text>
@@ -367,7 +380,94 @@ export default function OutboundDetails() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      <Portal>
+  <Modal
+    visible={productModalVisible}
+    onDismiss={() => setProductModalVisible(false)}
+    contentContainerStyle={styles.modalContainer}
+  >
+    {selectedProduct && (
+      <Card>
+        <Card.Content>
+          <View style={styles.modalHeader}>
+            <Text variant="titleMedium">Chi tiết sản phẩm</Text>
+            <IconButton 
+              icon="close" 
+              size={20} 
+              onPress={() => setProductModalVisible(false)} 
+            />
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.detailContainer}>
+            <Text variant="titleSmall" style={styles.productTitle}>
+              {selectedProduct.productName}
+            </Text>
+            
+            <View style={styles.detailRow}>
+              <View style={styles.detailColumn}>
+                <DetailItem label="Mã chi tiết" value={selectedProduct.outboundDetailsId.toString()} />
+                <DetailItem label="Mã lô" value={selectedProduct.lotId.toString()} />
+                <DetailItem label="Số lô" value={selectedProduct.lotNumber} />
+                <DetailItem label="Loại đơn vị" value={selectedProduct.unitType} />
+              </View>
+              
+              <View style={styles.detailColumn}>
+                <DetailItem label="Số lượng" value={selectedProduct.quantity.toString()} />
+                <DetailItem 
+                  label="Đơn giá" 
+                  value={formatVND(selectedProduct.unitPrice)} 
+                />
+                <DetailItem 
+                  label="Thành tiền" 
+                  value={formatVND(selectedProduct.totalPrice)}
+                  highlight
+                />
+                <DetailItem 
+                  label="Hạn sử dụng" 
+                  value={format(new Date(selectedProduct.expiryDate), "dd/MM/yyyy")}
+                />
+              </View>
+            </View>
+          </View>
+        </Card.Content>
+        <Card.Actions style={styles.modalActions}>
+          <Button 
+            mode="contained"
+            onPress={() => setProductModalVisible(false)}
+          >
+            Đóng
+          </Button>
+        </Card.Actions>
+      </Card>
+    )}
+  </Modal>
+</Portal>
     </>
+  );
+}
+
+function DetailItem({ 
+  label, 
+  value,
+  highlight = false
+}: { 
+  label: string, 
+  value: string,
+  highlight?: boolean
+}) {
+  return (
+    <View style={styles.detailItem}>
+      <Text variant="bodySmall" style={styles.detailLabel}>{label}:</Text>
+      <Text 
+        variant="bodyMedium" 
+        style={[styles.detailValue, highlight && styles.highlightedValue]}
+      >
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -426,6 +526,58 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#F44336', // Red
+  },
+  modalContainer: {
+    padding: 20,
+    margin: 16,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    elevation: 5,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dataRow: {
+    minHeight: 50,
+  },
+  productTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  detailContainer: {
+    marginTop: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  detailColumn: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  detailItem: {
+    marginBottom: 12,
+  },
+  detailLabel: {
+    color: '#666',
+    fontSize: 12,
+  },
+  detailValue: {
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  highlightedValue: {
+    color: '#006064',
+    fontWeight: 'bold',
+  },
+  modalActions: {
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });
 
