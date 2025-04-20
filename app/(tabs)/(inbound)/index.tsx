@@ -264,7 +264,7 @@ export default function Outbound() {
                     >
                       <DataTable.Cell style={{ flex: 0.4 }}>{item.inboundId}</DataTable.Cell>
                       <DataTable.Cell style={{ flex: 1, justifyContent: 'flex-start' }}>
-                        {item.inboundDate}
+                        {format(item?.inboundDate || new Date(), "dd/MM/yyyy HH:mm:ss")}
                       </DataTable.Cell>
                       <DataTable.Cell style={{ flex: 0.8 }}>{item.warehouseName}</DataTable.Cell>
                       <DataTable.Cell style={{ justifyContent: 'flex-end' }}>

@@ -153,7 +153,7 @@ export default function InboundDetails() {
                   {inbound?.inboundCode}
                 </Text>
                 <Text variant="bodyMedium" style={styles.dateText}>
-                  {inbound?.inboundDate}
+                  {format(inbound?.inboundDate || new Date(), "dd/MM/yyyy HH:mm:ss")}
                 </Text>
               </View>
               <Badge

@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useState } from "react";
-import { ScrollView, View, StyleSheet } from "react-native";
+import { ScrollView, View, StyleSheet, Linking } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -177,7 +177,19 @@ export default function OutboundDetails() {
           {/* Customer Information */}
           <Card style={styles.card}>
             <Card.Content>
-              <Title>Thông tin khách hàng</Title>
+              <View style={styles.sectionHeader}>
+                <Title>Thông tin khách hàng</Title>
+                {outbound?.phoneNumber && (
+                  <IconButton
+                    icon="phone"
+                    size={20}
+                    mode="contained"
+                    containerColor="#E3F2FD"
+                    iconColor="#1976D2"
+                    onPress={() => Linking.openURL(`tel:${outbound.phoneNumber}`)}
+                  />
+                )}
+              </View>
               <Divider style={styles.divider} />
 
               <View style={styles.infoRow}>
@@ -187,7 +199,13 @@ export default function OutboundDetails() {
 
               <View style={styles.infoRow}>
                 <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.phoneNumber}</Text>
+                <Text
+                  variant="bodyLarge"
+                  style={[styles.value, styles.phoneLink]}
+                  onPress={() => Linking.openURL(`tel:${outbound?.phoneNumber}`)}
+                >
+                  {outbound?.phoneNumber}
+                </Text>
               </View>
             </Card.Content>
           </Card>
@@ -195,7 +213,19 @@ export default function OutboundDetails() {
           {/* Receiver Information */}
           <Card style={styles.card}>
             <Card.Content>
-              <Title>Thông tin người nhận</Title>
+              <View style={styles.sectionHeader}>
+                <Title>Thông tin người nhận</Title>
+                {outbound?.receiverPhone && (
+                  <IconButton
+                    icon="phone"
+                    size={20}
+                    mode="contained"
+                    containerColor="#E3F2FD"
+                    iconColor="#1976D2"
+                    onPress={() => Linking.openURL(`tel:${outbound.receiverPhone}`)}
+                  />
+                )}
+              </View>
               <Divider style={styles.divider} />
 
               <View style={styles.infoRow}>
@@ -205,7 +235,13 @@ export default function OutboundDetails() {
 
               <View style={styles.infoRow}>
                 <Text variant="bodyMedium" style={styles.label}>Số điện thoại:</Text>
-                <Text variant="bodyLarge" style={styles.value}>{outbound?.receiverPhone}</Text>
+                <Text
+                  variant="bodyLarge"
+                  style={[styles.value, styles.phoneLink]}
+                  onPress={() => Linking.openURL(`tel:${outbound?.receiverPhone}`)}
+                >
+                  {outbound?.receiverPhone}
+                </Text>
               </View>
 
               <View style={styles.infoRow}>
@@ -382,87 +418,87 @@ export default function OutboundDetails() {
       </Portal>
 
       <Portal>
-  <Modal
-    visible={productModalVisible}
-    onDismiss={() => setProductModalVisible(false)}
-    contentContainerStyle={styles.modalContainer}
-  >
-    {selectedProduct && (
-      <Card>
-        <Card.Content>
-          <View style={styles.modalHeader}>
-            <Text variant="titleMedium">Chi tiết sản phẩm</Text>
-            <IconButton 
-              icon="close" 
-              size={20} 
-              onPress={() => setProductModalVisible(false)} 
-            />
-          </View>
-          
-          <Divider style={styles.divider} />
-          
-          <View style={styles.detailContainer}>
-            <Text variant="titleSmall" style={styles.productTitle}>
-              {selectedProduct.productName}
-            </Text>
-            
-            <View style={styles.detailRow}>
-              <View style={styles.detailColumn}>
-                <DetailItem label="Mã chi tiết" value={selectedProduct.outboundDetailsId.toString()} />
-                <DetailItem label="Mã lô" value={selectedProduct.lotId.toString()} />
-                <DetailItem label="Số lô" value={selectedProduct.lotNumber} />
-                <DetailItem label="Loại đơn vị" value={selectedProduct.unitType} />
-              </View>
-              
-              <View style={styles.detailColumn}>
-                <DetailItem label="Số lượng" value={selectedProduct.quantity.toString()} />
-                <DetailItem 
-                  label="Đơn giá" 
-                  value={formatVND(selectedProduct.unitPrice)} 
-                />
-                <DetailItem 
-                  label="Thành tiền" 
-                  value={formatVND(selectedProduct.totalPrice)}
-                  highlight
-                />
-                <DetailItem 
-                  label="Hạn sử dụng" 
-                  value={format(new Date(selectedProduct.expiryDate), "dd/MM/yyyy")}
-                />
-              </View>
-            </View>
-          </View>
-        </Card.Content>
-        <Card.Actions style={styles.modalActions}>
-          <Button 
-            mode="contained"
-            onPress={() => setProductModalVisible(false)}
-          >
-            Đóng
-          </Button>
-        </Card.Actions>
-      </Card>
-    )}
-  </Modal>
-</Portal>
+        <Modal
+          visible={productModalVisible}
+          onDismiss={() => setProductModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          {selectedProduct && (
+            <Card>
+              <Card.Content>
+                <View style={styles.modalHeader}>
+                  <Text variant="titleMedium">Chi tiết sản phẩm</Text>
+                  <IconButton
+                    icon="close"
+                    size={20}
+                    onPress={() => setProductModalVisible(false)}
+                  />
+                </View>
+
+                <Divider style={styles.divider} />
+
+                <View style={styles.detailContainer}>
+                  <Text variant="titleSmall" style={styles.productTitle}>
+                    {selectedProduct.productName}
+                  </Text>
+
+                  <View style={styles.detailRow}>
+                    <View style={styles.detailColumn}>
+                      <DetailItem label="Mã chi tiết" value={selectedProduct.outboundDetailsId.toString()} />
+                      <DetailItem label="Mã lô" value={selectedProduct.lotId.toString()} />
+                      <DetailItem label="Số lô" value={selectedProduct.lotNumber} />
+                      <DetailItem label="Loại đơn vị" value={selectedProduct.unitType} />
+                    </View>
+
+                    <View style={styles.detailColumn}>
+                      <DetailItem label="Số lượng" value={selectedProduct.quantity.toString()} />
+                      <DetailItem
+                        label="Đơn giá"
+                        value={formatVND(selectedProduct.unitPrice)}
+                      />
+                      <DetailItem
+                        label="Thành tiền"
+                        value={formatVND(selectedProduct.totalPrice)}
+                        highlight
+                      />
+                      <DetailItem
+                        label="Hạn sử dụng"
+                        value={format(new Date(selectedProduct.expiryDate), "dd/MM/yyyy")}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </Card.Content>
+              <Card.Actions style={styles.modalActions}>
+                <Button
+                  mode="contained"
+                  onPress={() => setProductModalVisible(false)}
+                >
+                  Đóng
+                </Button>
+              </Card.Actions>
+            </Card>
+          )}
+        </Modal>
+      </Portal>
     </>
   );
 }
 
-function DetailItem({ 
-  label, 
+function DetailItem({
+  label,
   value,
   highlight = false
-}: { 
-  label: string, 
+}: {
+  label: string,
   value: string,
   highlight?: boolean
 }) {
   return (
     <View style={styles.detailItem}>
       <Text variant="bodySmall" style={styles.detailLabel}>{label}:</Text>
-      <Text 
-        variant="bodyMedium" 
+      <Text
+        variant="bodyMedium"
         style={[styles.detailValue, highlight && styles.highlightedValue]}
       >
         {value}
@@ -578,6 +614,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  phoneLink: {
+    color: '#1976D2', 
+    textDecorationLine: 'underline',
   },
 });
 
