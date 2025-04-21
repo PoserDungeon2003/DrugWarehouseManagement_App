@@ -125,10 +125,17 @@ export interface InboundDetail {
 }
 
 // Report assets (likely images or documents)
-export interface ReportAsset {
-  id?: number;
-  url: string;
+export interface Asset {
+  assetId: number;
+  fileUrl: string;
   fileName: string;
+  fileExtension: string;
+  fileSize: number;
+  uploadedAt: string; // ISO date string
+  status: string;
+  accountId: string;
+  categoryId: number;
+  contentType: string;
 }
 
 // Inbound report information
@@ -137,7 +144,7 @@ export interface InboundReport {
   problemDescription: string;
   status: string; // Could be typed as enum if values are fixed
   reportDate: string;
-  assets: ReportAsset[];
+  assets: Asset[];
 }
 
 // Provider details

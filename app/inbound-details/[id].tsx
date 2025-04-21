@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useCallback, useState } from "react";
-import { ScrollView, View, StyleSheet, Linking, RefreshControl } from "react-native";
+import { ScrollView, View, StyleSheet, Linking, RefreshControl, Platform } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -145,6 +145,39 @@ export default function InboundDetails() {
   const navigateToCreateReport = () => {
     router.push(`/create-inbound-reports/${id}`);
   };
+
+  const getImages = async (assetPath: string) => {
+    const filename = assetPath.split('/').pop() || '';
+
+    try {
+      const response = await api.get(`/api/Asset/inbound-report/${encodeURIComponent(filename)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }) as any;
+      if (!response || !response.data) {
+        console.error('No data in response');
+        return null;
+      }
+  
+      // Different handling based on platform
+      if (Platform.OS === 'web') {
+        // For web: create an object URL from the blob
+        return URL.createObjectURL(response.data);
+      } else {
+        // For native: convert blob to base64
+        // Note: We need to use FileReader which is available in React Native
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(response.data);
+        });
+      }
+  
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      return null;
+    }
+  }
 
   if (isLoading) {
     return (
@@ -377,7 +410,7 @@ export default function InboundDetails() {
                         icon="file-document"
                         mode="outlined"
                         style={styles.attachmentButton}
-                        onPress={() => Linking.openURL(asset.url)}
+                        onPress={() => Linking.openURL(asset.fileUrl)}
                       >
                         {asset.fileName}
                       </Button>
@@ -767,6 +800,7 @@ const styles = StyleSheet.create({
   },
   attachmentButton: {
     marginBottom: 8,
+    maxWidth: '100%', // Limit button width
   },
   reportBadge: {
     flexDirection: 'row',
