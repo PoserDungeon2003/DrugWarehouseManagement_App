@@ -5,8 +5,8 @@ import { format } from "date-fns";
 import { router } from "expo-router";
 import _ from "lodash";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View, StyleSheet, RefreshControl } from "react-native";
-import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Text } from "react-native-paper";
+import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
+import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Text, ActivityIndicator } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetInbounds } from "@/hooks/useInbound";
 

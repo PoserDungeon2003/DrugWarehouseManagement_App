@@ -30,7 +30,7 @@ export const useGetInbounds = (token: string, params: InboundQueryPaging) => {
 
 export const useGetInboundById = (token: string, id: number) => {
   return useQuery({
-    queryKey: ["inbound", id],
+    queryKey: ["inbounds", id],
     queryFn: () => getInboundById(token, id),
     enabled: !!token,
   })

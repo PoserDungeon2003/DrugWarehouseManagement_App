@@ -48,6 +48,12 @@
             "usesCleartextTraffic": true
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos for our report attachment."
+        }
       ]
     ],
     "experiments": {

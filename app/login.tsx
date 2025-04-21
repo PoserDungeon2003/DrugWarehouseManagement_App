@@ -23,7 +23,7 @@ export type LoginType = InferType<typeof schema>;
 
 export default function LoginScreen() {
   const queryClient = useQueryClient();
-  const { handleSubmit, control, setError, formState: { errors, isLoading } } = useForm<LoginType>({
+  const { handleSubmit, control, setError, formState: { errors, isSubmitting } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
     defaultValues: {
@@ -118,7 +118,8 @@ export default function LoginScreen() {
           style={buttonStyles.button}
           labelStyle={buttonStyles.text}
           mode="contained"
-          loading={isLoading}
+          loading={isSubmitting}
+          disabled={isSubmitting}
           onPress={handleSubmit(onSubmit)}
         >
           Đăng nhập

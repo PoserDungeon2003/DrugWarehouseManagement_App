@@ -9,8 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
-import { useState } from "react";
-import { ScrollView, View, StyleSheet } from "react-native";
+import { useCallback, useState } from "react";
+import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, Portal, Text, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -23,8 +23,9 @@ export default function LotTransferDetails() {
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const { show, hide } = useToast();
   const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: lotTransfer, isLoading } = useGetLotTransferById(token || "", Number(id));
+  const { data: lotTransfer, isLoading, refetch } = useGetLotTransferById(token || "", Number(id));
 
   const handleApprove = async () => {
     try {
@@ -113,6 +114,12 @@ export default function LotTransferDetails() {
     }
   }
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, []);
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -122,7 +129,12 @@ export default function LotTransferDetails() {
   }
   return (
     <>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.container}>
           {/* Header Section */}
           <Card style={styles.card}>

@@ -9,8 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import _ from "lodash";
-import { useState } from "react";
-import { ScrollView, View, StyleSheet, Linking } from "react-native";
+import { useCallback, useState } from "react";
+import { ScrollView, View, StyleSheet, Linking, RefreshControl } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -23,11 +23,12 @@ export default function OutboundDetails() {
   const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<OutboundDetail | null>(null);
   const [productModalVisible, setProductModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { show, hide } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: outbound, isLoading } = useGetOutboundById(token || "", Number(id));
+  const { data: outbound, isLoading, refetch } = useGetOutboundById(token || "", Number(id));
 
   // Calculate total amount
   const totalAmount = _.reduce(outbound?.outboundDetails,
@@ -123,6 +124,12 @@ export default function OutboundDetails() {
     }
   }
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, []);
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -132,7 +139,12 @@ export default function OutboundDetails() {
   }
   return (
     <>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.container}>
           {/* Header Section */}
           <Card style={styles.card}>
@@ -621,7 +633,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   phoneLink: {
-    color: '#1976D2', 
+    color: '#1976D2',
     textDecorationLine: 'underline',
   },
 });

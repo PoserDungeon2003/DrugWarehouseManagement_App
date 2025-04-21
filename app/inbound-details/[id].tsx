@@ -2,15 +2,16 @@ import api from "@/api";
 import { INBOUND_STATUS_TEXT } from "@/common/const";
 import { InboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
+import Loading from "@/components/Loading";
 import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
 import { InboundDetail } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
-import { useState } from "react";
-import { ScrollView, View, StyleSheet, Linking } from "react-native";
+import { useCallback, useState } from "react";
+import { ScrollView, View, StyleSheet, Linking, RefreshControl } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -19,15 +20,16 @@ export default function InboundDetails() {
   const user = useGetUser();
   const token = user?.data?.token;
   // const [approveDialogVisible, setApproveDialogVisible] = useState(false);
-  // const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
-  // const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [completeDialogVisible, setCompleteDialogVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<InboundDetail | null>(null);
   const [productModalVisible, setProductModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { show } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: inbound, isLoading } = useGetInboundById(token || "", Number(id));
+  const { data: inbound, isLoading, refetch } = useGetInboundById(token || "", Number(id));
 
   // Calculate total amount
   const totalAmount = inbound?.inboundDetails?.reduce(
@@ -51,8 +53,9 @@ export default function InboundDetails() {
 
   // const handleApprove = async () => {
   //   try {
-  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
-  //       inboundStatus: InboundStatus.InProgress
+  //     await api.put(`/api/Inbound/status`, {
+  //       inboundId: inbound?.inboundId,
+  //       inboundStatus: InboundStatus.Completed,
   //     }, {
   //       headers: { Authorization: `Bearer ${token}` },
   //     });
@@ -73,57 +76,58 @@ export default function InboundDetails() {
   //   }
   // };
 
-  // const handleComplete = async () => {
-  //   try {
-  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
-  //       inboundStatus: InboundStatus.Completed
-  //     }, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
+  const handleComplete = async () => {
+    try {
+      await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+        inboundStatus: InboundStatus.Completed
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  //     setCompleteDialogVisible(false);
+      setCompleteDialogVisible(false);
 
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['inbound', Number(id)]
-  //     });
+      queryClient.invalidateQueries({
+        queryKey: ['inbound', Number(id)]
+      });
 
-  //     show({ message: 'Hoàn thành phiếu nhập thành công', type: 'success' });
-  //   } catch (error: any) {
-  //     console.error('Error completing inbound:', error);
-  //     show({
-  //       message: error?.response?.data?.message || 'Lỗi khi hoàn thành phiếu nhập',
-  //       type: 'error',
-  //     });
-  //   }
-  // };
+      show({ message: 'Hoàn thành phiếu nhập thành công', type: 'success' });
+    } catch (error: any) {
+      console.error('Error completing inbound:', error);
+      show({
+        message: error?.response?.data?.message || 'Lỗi khi hoàn thành phiếu nhập',
+        type: 'error',
+      });
+    }
+  };
 
-  // const handleCancel = async () => {
-  //   try {
-  //     await api.put(`/api/Inbound/${inbound?.inboundId}`, {
-  //       inboundStatus: InboundStatus.Cancelled
-  //     }, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
+  const handleCancel = async () => {
+    try {
+      await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+        inboundStatus: InboundStatus.Cancelled
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  //     setCancelDialogVisible(false);
+      setCancelDialogVisible(false);
 
-  //     queryClient.invalidateQueries({
-  //       queryKey: ['inbound', Number(id)]
-  //     });
+      queryClient.invalidateQueries({
+        queryKey: ['inbound', Number(id)]
+      });
 
-  //     show({ message: 'Hủy phiếu nhập thành công', type: 'success' });
-  //   } catch (error: any) {
-  //     console.error('Error cancelling inbound:', error);
-  //     show({
-  //       message: error?.response?.data?.message || 'Lỗi khi hủy phiếu nhập',
-  //       type: 'error',
-  //     });
-  //   }
-  // };
+      show({ message: 'Hủy phiếu nhập thành công', type: 'success' });
+    } catch (error: any) {
+      console.error('Error cancelling inbound:', error);
+      show({
+        message: error?.response?.data?.message || 'Lỗi khi hủy phiếu nhập',
+        type: 'error',
+      });
+    }
+  };
 
   const openReport = () => {
     if (inbound?.report) {
       // Navigate to a report details screen or show modal
+      router.push(`/create-inbound-reports/${id}`);
     }
   };
 
@@ -132,18 +136,30 @@ export default function InboundDetails() {
     setProductModalVisible(true);
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, []);
+
+  const navigateToCreateReport = () => {
+    router.push(`/create-inbound-reports/${id}`);
+  };
+
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={{ marginTop: 16 }}>Đang tải thông tin...</Text>
-      </View>
+      <Loading />
     );
   }
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Basic Information Card */}
         <Card style={styles.card}>
           <Card.Content>
@@ -348,7 +364,7 @@ export default function InboundDetails() {
               </Text>
 
               <Text style={styles.reportDate}>
-                Báo cáo ngày: {inbound.report.reportDate}
+                Báo cáo ngày: {format(new Date(inbound.report.reportDate), "dd/MM/yyyy HH:mm:ss")}
               </Text>
 
               {inbound.report.assets && inbound.report.assets.length > 0 && (
@@ -372,7 +388,41 @@ export default function InboundDetails() {
             </Card.Content>
           </Card>
         )}
+
       </ScrollView>
+      {currentStatus === InboundStatus.Pending && (
+          <View style={styles.bottomActionBar}>
+            <Button
+              mode="contained"
+              icon="close-circle"
+              onPress={() => setCancelDialogVisible(true)}
+              style={styles.cancelButtonBottom}
+              contentStyle={styles.actionButtonContent}
+            >
+              Hủy phiếu
+            </Button>
+            <Button
+              mode="contained"
+              icon="check-circle"
+              onPress={() => setCompleteDialogVisible(true)}
+              style={styles.completeButtonBottom}
+              contentStyle={styles.actionButtonContent}
+            >
+              Hoàn thành
+            </Button>
+            {!inbound?.report && (
+              <Button
+                mode="contained"
+                icon="alert-circle-outline"
+                onPress={navigateToCreateReport}
+                style={styles.reportButtonBottom}
+                contentStyle={styles.actionButtonContent}
+              >
+                Báo cáo sự cố
+              </Button>
+            )}
+          </View>
+        )}
 
       {/* Approval Dialog */}
       {/* <Portal>
@@ -392,7 +442,7 @@ export default function InboundDetails() {
       </Portal> */}
 
       {/* Complete Dialog */}
-      {/* <Portal>
+      <Portal>
         <Dialog visible={completeDialogVisible} onDismiss={() => setCompleteDialogVisible(false)}>
           <Dialog.Title>Hoàn thành phiếu nhập</Dialog.Title>
           <Dialog.Content>
@@ -406,10 +456,10 @@ export default function InboundDetails() {
             <Button mode="contained" onPress={handleComplete}>Xác nhận</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal> */}
+      </Portal>
 
       {/* Cancel Dialog */}
-      {/* <Portal>
+      <Portal>
         <Dialog visible={cancelDialogVisible} onDismiss={() => setCancelDialogVisible(false)}>
           <Dialog.Title>Hủy phiếu nhập</Dialog.Title>
           <Dialog.Content>
@@ -430,7 +480,7 @@ export default function InboundDetails() {
             </Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal> */}
+      </Portal>
 
       <Portal>
         <Modal
@@ -567,6 +617,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -766,5 +817,46 @@ const styles = StyleSheet.create({
   dataRow: {
     minHeight: 50,
     paddingVertical: 4,
+  },
+  actionContainer: {
+    alignItems: 'flex-end',
+  },
+  reportButton: {
+    marginTop: 8,
+    backgroundColor: '#FF9800',
+  },
+  reportButtonLabel: {
+    fontSize: 12,
+  },
+  bottomActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    elevation: 8,
+  },
+  cancelButtonBottom: {
+    backgroundColor: '#F44336',
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  completeButtonBottom: {
+    backgroundColor: '#4CAF50',
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  reportButtonBottom: {
+    backgroundColor: '#FF9800',
+    flex: 1, 
+    marginHorizontal: 4,
+  },
+  actionButtonContent: {
+    height: 45,
   },
 });

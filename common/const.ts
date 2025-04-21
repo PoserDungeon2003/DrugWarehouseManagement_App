@@ -30,7 +30,7 @@ export const LOT_TRANSFER_STATUS_TEXT: Record<string, string> = {
   "cancelled": "Đã hủy", // Cancelled
 };
 
-export const INBOUND_STATUS_TEXT = {
+export const INBOUND_STATUS_TEXT: Record<InboundStatus, string> = {
   [InboundStatus.Pending]: "Đang chờ",
   [InboundStatus.InProgress]: "Đang xử lý",
   [InboundStatus.Completed]: "Đã hoàn thành", 
