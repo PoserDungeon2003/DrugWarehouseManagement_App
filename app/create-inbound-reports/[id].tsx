@@ -2,7 +2,7 @@ import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, Image, StyleSheet } from "react-native";
 import { ActivityIndicator, Button, Card, Divider, HelperText, IconButton, Text, TextInput, Title } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
@@ -19,6 +19,7 @@ type ImageAsset = {
   name: string;
   type: string;
   size?: number;
+  webFile?: File;
 };
 
 let schema = object({
@@ -35,6 +36,8 @@ export default function CreateInboundReport() {
   const token = user?.data?.token;
   const { show } = useToast();
   const queryClient = useQueryClient();
+  const [isWeb] = useState(Platform.OS === 'web');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: inbound, isLoading } = useGetInboundById(token || '', inboundId);
   // Form state
@@ -140,15 +143,29 @@ export default function CreateInboundReport() {
 
         // Append images if any
         if (images.length > 0) {
-          images.forEach(image => {
-            formData.append('Images', {
-              uri: Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri,
-              type: image.type || 'image/jpeg',
-              name: image.name || `image-${Date.now()}.jpg`,
-            } as any);
-          });
-        }
+          if (Platform.OS === 'web') {
+            // Web approach - use the File objects directly
+            images.forEach(image => {
+              if (image.webFile) {
+                // Use the actual File object for web
+                formData.append('Images', image.webFile);
+              }
+            });
+          } else {
+            // Mobile approach - use the URI
+            images.forEach(image => {
+              const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
+              const name = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+              const type = image.type || 'image/jpeg';
 
+              formData.append('Images', {
+                uri,
+                type,
+                name,
+              } as any);
+            });
+          }
+        }
         // Send the request
         const response = await api.put('/api/InboundReport', formData, {
           headers: {
@@ -196,15 +213,29 @@ export default function CreateInboundReport() {
 
         // Append images if any
         if (images.length > 0) {
-          images.forEach(image => {
-            formData.append('Images', {
-              uri: Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri,
-              type: image.type || 'image/jpeg',
-              name: image.name || `image-${Date.now()}.jpg`,
-            } as any);
-          });
-        }
+          if (Platform.OS === 'web') {
+            // Web approach - use the File objects directly
+            images.forEach(image => {
+              if (image.webFile) {
+                // Use the actual File object for web
+                formData.append('Images', image.webFile);
+              }
+            });
+          } else {
+            // Mobile approach - use the URI
+            images.forEach(image => {
+              const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
+              const name = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+              const type = image.type || 'image/jpeg';
 
+              formData.append('Images', {
+                uri,
+                type,
+                name,
+              } as any);
+            });
+          }
+        }
         // Send the request
         const response = await api.postWithFormData('/api/InboundReport', formData, {
           headers: {
@@ -243,6 +274,27 @@ export default function CreateInboundReport() {
       }
 
     }
+  };
+
+  const handleWebFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImages = Array.from(files).slice(0, 5 - images.length).map(file => {
+      return {
+        uri: URL.createObjectURL(file),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        // Store the actual file for web uploads
+        webFile: file
+      } as ImageAsset & { webFile?: File };
+    });
+
+    setImages(prev => {
+      const combined = [...prev, ...newImages];
+      return combined.slice(0, 5);
+    });
   };
 
   if (isLoading) {
@@ -332,25 +384,49 @@ export default function CreateInboundReport() {
             </Text>
 
             <View style={styles.imageButtons}>
-              <Button
-                mode="outlined"
-                icon="camera"
-                onPress={takePhoto}
-                disabled={images.length >= 5 || isSubmitting}
-                style={styles.uploadButton}
-              >
-                Chụp ảnh
-              </Button>
+              {isWeb ? (
+                <>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleWebFileSelect}
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                  />
+                  <Button
+                    mode="outlined"
+                    icon="image"
+                    onPress={() => fileInputRef.current?.click()}
+                    disabled={images.length >= 5 || isSubmitting}
+                    style={styles.uploadButton}
+                  >
+                    Chọn ảnh
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    mode="outlined"
+                    icon="camera"
+                    onPress={takePhoto}
+                    disabled={images.length >= 5 || isSubmitting}
+                    style={styles.uploadButton}
+                  >
+                    Chụp ảnh
+                  </Button>
 
-              <Button
-                mode="outlined"
-                icon="image"
-                onPress={pickImage}
-                disabled={images.length >= 5 || isSubmitting}
-                style={styles.uploadButton}
-              >
-                Chọn ảnh
-              </Button>
+                  <Button
+                    mode="outlined"
+                    icon="image"
+                    onPress={pickImage}
+                    disabled={images.length >= 5 || isSubmitting}
+                    style={styles.uploadButton}
+                  >
+                    Chọn ảnh
+                  </Button>
+                </>
+              )}
             </View>
 
             {/* Image Previews */}
