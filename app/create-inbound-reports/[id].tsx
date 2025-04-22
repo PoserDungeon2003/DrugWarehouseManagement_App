@@ -147,21 +147,23 @@ export default function CreateInboundReport() {
             // Web approach - use the File objects directly
             images.forEach(image => {
               if (image.webFile) {
-                // Use the actual File object for web
-                formData.append('Images', image.webFile);
+                const encodedFileName = encodeURIComponent(image.webFile.name);
+                formData.append('Images', image.webFile, encodedFileName);
               }
             });
           } else {
             // Mobile approach - use the URI
             images.forEach(image => {
               const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
-              const name = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+              let originalName = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+    
+              const encodedName = encodeURIComponent(originalName);
               const type = image.type || 'image/jpeg';
-
+          
               formData.append('Images', {
                 uri,
                 type,
-                name,
+                name: encodedName,
               } as any);
             });
           }
@@ -217,21 +219,23 @@ export default function CreateInboundReport() {
             // Web approach - use the File objects directly
             images.forEach(image => {
               if (image.webFile) {
-                // Use the actual File object for web
-                formData.append('Images', image.webFile);
+                const encodedFileName = encodeURIComponent(image.webFile.name);
+                formData.append('Images', image.webFile, encodedFileName);
               }
             });
           } else {
             // Mobile approach - use the URI
             images.forEach(image => {
               const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
-              const name = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+              let originalName = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
+    
+              const encodedName = encodeURIComponent(originalName);
               const type = image.type || 'image/jpeg';
-
+          
               formData.append('Images', {
                 uri,
                 type,
-                name,
+                name: encodedName,
               } as any);
             });
           }

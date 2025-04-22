@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useCallback, useState } from "react";
-import { ScrollView, View, StyleSheet, Linking, RefreshControl, Platform } from "react-native";
+import { ScrollView, View, StyleSheet, Linking, RefreshControl, Platform, Image } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
 
@@ -25,6 +25,9 @@ export default function InboundDetails() {
   const [selectedProduct, setSelectedProduct] = useState<InboundDetail | null>(null);
   const [productModalVisible, setProductModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const { show } = useToast();
   const queryClient = useQueryClient();
@@ -150,34 +153,50 @@ export default function InboundDetails() {
 
   const getImages = async (assetPath: string): Promise<string | null> => {
     const filename = assetPath.split('/').pop() || '';
-  
+
     try {
+      // Set proper responseType for direct handling
+      const responseType = 'blob';
+
       const response = await api.get(`/api/Asset/inbound-report/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob', // Add explicit responseType
+        responseType: responseType,
       }) as any;
-      
-      if (!response || !response.data) {
+
+      if (!response) {
         console.error('No data in response');
         return null;
       }
-  
-      // Different handling based on platform
+
       if (Platform.OS === 'web') {
-        // For web: create an object URL from the blob
-        return URL.createObjectURL(response.data);
+        // For web: create object URL directly from the blob response
+        // This avoids unnecessary conversion
+        return URL.createObjectURL(response);
       } else {
-        // For native: convert blob to base64
-        return new Promise<string>((resolve, reject) => { // Add explicit Promise type
-          const reader = new FileReader();
-          reader.onload = () => {
-            if (typeof reader.result === 'string') {
-              resolve(reader.result);
-            } else {
-              reject(new Error('FileReader result is not a string'));
-            }
+        // For native: get the file URI using expo-file-system
+        const { FileSystem } = require('expo-file-system');
+
+        // Create a temporary file path
+        const tempFilePath = `${FileSystem.cacheDirectory}${filename}`;
+
+        // Convert blob to base64 for storage (minimal conversion needed)
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+          reader.onload = async () => {
+            // The result is a base64 string
+            const base64Data = reader.result?.toString().split(',')[1];
+
+            // Write the file to temporary storage
+            await FileSystem.writeAsStringAsync(
+              tempFilePath,
+              base64Data,
+              { encoding: FileSystem.EncodingType.Base64 }
+            );
+
+            // Return the file URI that can be used directly by Image component
+            resolve(tempFilePath);
           };
-          reader.onerror = reject;
+          reader.onerror = () => reject(new Error('Failed to read blob'));
           reader.readAsDataURL(response.data);
         });
       }
@@ -187,59 +206,60 @@ export default function InboundDetails() {
     }
   }
 
+  const previewImage = async (asset: Asset) => {
+    setPreviewLoading(true);
+    try {
+      const imageData = await getImages(asset.fileUrl);
+      if (imageData) {
+        setSelectedImage(imageData);
+        setImageViewerVisible(true);
+      } else {
+        show({ message: 'Không thể tải ảnh để xem', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error previewing image:', error);
+      show({ message: 'Lỗi khi tải ảnh để xem', type: 'error' });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const downloadImage = async (asset: Asset) => {
     try {
-      // Show loading indicator
       show({ message: 'Đang tải ảnh...', type: 'info' });
-      
-      // Get image data using existing getImages function
-      const imageData = await getImages(asset.fileUrl);
-      
-      if (!imageData) {
+
+      const imageUrl = await getImages(asset.fileUrl);
+      if (!imageUrl) {
         show({ message: 'Không thể tải ảnh', type: 'error' });
         return;
       }
-      
+
       if (Platform.OS === 'web') {
-        // For web: Create an anchor element and trigger download
+        // For web: Use the blob URL directly
         const link = document.createElement('a');
-        link.href = imageData;
+        link.href = imageUrl;
         link.download = asset.fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         show({ message: 'Tải ảnh thành công', type: 'success' });
       } else {
-        // For native: Use Expo FileSystem to download and save
-        // First, need to convert the base64 URI to a file URI
-        // This requires expo-file-system package
-        const { FileSystem } = require('expo-file-system');
-        
-        // Get local directory for saving files
-        const fileUri = FileSystem.documentDirectory + asset.fileName;
-        
-        // Save the file
-        await FileSystem.writeAsStringAsync(
-          fileUri, 
-          imageData.split(',')[1], 
-          { encoding: FileSystem.EncodingType.Base64 }
-        );
-        
-        // Use Share API to let user choose what to do with the image
+        // For native: The image is already saved to temporary storage
+        // Just need to share it
         const { Share } = require('react-native');
         await Share.share({
-          url: fileUri,
+          url: imageUrl,
           message: 'Image from DrugWarehouseManagement'
         });
-        
-        show({ message: 'Ảnh đã được lưu', type: 'success' });
+
+        show({ message: 'Ảnh đã được chia sẻ', type: 'success' });
       }
     } catch (error) {
       console.error('Error downloading image:', error);
       show({ message: 'Lỗi khi tải ảnh', type: 'error' });
     }
   };
-
+  
   if (isLoading) {
     return (
       <Loading />
@@ -466,15 +486,49 @@ export default function InboundDetails() {
                   <Text style={styles.attachmentsLabel}>Tệp đính kèm:</Text>
                   <View style={styles.attachmentsList}>
                     {inbound.report.assets.map((asset, index) => (
-                      <Button
-                        key={index}
-                        icon="file-document"
-                        mode="outlined"
-                        style={styles.attachmentButton}
-                        onPress={() => Linking.openURL(asset.fileUrl)}
-                      >
-                        {asset.fileName}
-                      </Button>
+                      <View key={index} style={styles.attachmentItem}>
+                        <Button
+                          icon={asset.contentType?.startsWith('image/') ? "file-image" : "file-document"}
+                          mode="outlined"
+                          style={styles.attachmentButton}
+                          contentStyle={styles.attachmentButtonContent}
+                          labelStyle={styles.attachmentButtonLabel}
+                          onPress={() => asset.contentType?.startsWith('image/')
+                            ? previewImage(asset)
+                            : Linking.openURL(asset.fileUrl)
+                          }
+                        >
+                          {asset.fileName.length > 15
+                            ? asset.fileName.substring(0, 12) + '...'
+                            : asset.fileName}
+                        </Button>
+
+                        {asset.contentType?.startsWith('image/') && (
+                          <View style={styles.buttonGroup}>
+                            <IconButton
+                              icon="eye"
+                              size={18}
+                              mode="contained"
+                              containerColor="#E8F5E9"
+                              iconColor="#388E3C"
+                              style={styles.actionButton}
+                              onPress={() => previewImage(asset)}
+                              loading={previewLoading}
+                              disabled={previewLoading}
+                            />
+
+                            <IconButton
+                              icon="download"
+                              size={18}
+                              mode="contained"
+                              containerColor="#E3F2FD"
+                              iconColor="#1976D2"
+                              style={styles.actionButton}
+                              onPress={() => downloadImage(asset)}
+                            />
+                          </View>
+                        )}
+                      </View>
                     ))}
                   </View>
                 </View>
@@ -485,38 +539,38 @@ export default function InboundDetails() {
 
       </ScrollView>
       {currentStatus === InboundStatus.Pending && (
-          <View style={styles.bottomActionBar}>
+        <View style={styles.bottomActionBar}>
+          <Button
+            mode="contained"
+            icon="close-circle"
+            onPress={() => setCancelDialogVisible(true)}
+            style={styles.cancelButtonBottom}
+            contentStyle={styles.actionButtonContent}
+          >
+            Hủy phiếu
+          </Button>
+          <Button
+            mode="contained"
+            icon="check-circle"
+            onPress={() => setCompleteDialogVisible(true)}
+            style={styles.completeButtonBottom}
+            contentStyle={styles.actionButtonContent}
+          >
+            Hoàn thành
+          </Button>
+          {!inbound?.report && (
             <Button
               mode="contained"
-              icon="close-circle"
-              onPress={() => setCancelDialogVisible(true)}
-              style={styles.cancelButtonBottom}
+              icon="alert-circle-outline"
+              onPress={navigateToCreateReport}
+              style={styles.reportButtonBottom}
               contentStyle={styles.actionButtonContent}
             >
-              Hủy phiếu
+              Báo cáo sự cố
             </Button>
-            <Button
-              mode="contained"
-              icon="check-circle"
-              onPress={() => setCompleteDialogVisible(true)}
-              style={styles.completeButtonBottom}
-              contentStyle={styles.actionButtonContent}
-            >
-              Hoàn thành
-            </Button>
-            {!inbound?.report && (
-              <Button
-                mode="contained"
-                icon="alert-circle-outline"
-                onPress={navigateToCreateReport}
-                style={styles.reportButtonBottom}
-                contentStyle={styles.actionButtonContent}
-              >
-                Báo cáo sự cố
-              </Button>
-            )}
-          </View>
-        )}
+          )}
+        </View>
+      )}
 
       {/* Approval Dialog */}
       {/* <Portal>
@@ -648,6 +702,47 @@ export default function InboundDetails() {
                 </View>
               </Card.Content>
             </Card>
+          )}
+        </Modal>
+      </Portal>
+
+      <Portal>
+        <Modal
+          visible={imageViewerVisible}
+          onDismiss={() => setImageViewerVisible(false)}
+          contentContainerStyle={styles.imageViewerModal}
+        >
+          {selectedImage && (
+            <View style={styles.imageViewerContainer}>
+              <IconButton
+                icon="close"
+                size={24}
+                style={styles.closeImageButton}
+                onPress={() => setImageViewerVisible(false)}
+              />
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+              {Platform.OS === 'web' && (
+                <Button
+                  icon="download"
+                  mode="contained"
+                  style={styles.downloadButtonInViewer}
+                  onPress={() => {
+                    const link = document.createElement('a');
+                    link.href = selectedImage;
+                    link.download = 'image.jpg'; // You could get the filename from state
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  Tải ảnh
+                </Button>
+              )}
+            </View>
           )}
         </Modal>
       </Portal>
@@ -948,10 +1043,58 @@ const styles = StyleSheet.create({
   },
   reportButtonBottom: {
     backgroundColor: '#FF9800',
-    flex: 1, 
+    flex: 1,
     marginHorizontal: 4,
   },
   actionButtonContent: {
     height: 45,
   },
+  attachmentItem: {
+    flexDirection: 'column',
+    marginBottom: 12,
+    marginRight: 8,
+    width: 150,
+  },
+  attachmentButtonContent: {
+    paddingHorizontal: 8,
+  },
+  attachmentButtonLabel: {
+    fontSize: 11,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButton: {
+    margin: 2,
+  },
+  imageViewerModal: {
+    margin: 0,
+    padding: 0,
+    flex: 1,
+  },
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+  },
+  closeImageButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    zIndex: 10,
+  },
+  downloadButtonInViewer: {
+    position: 'absolute',
+    bottom: 40,
+    backgroundColor: '#1976D2',
+    zIndex: 10,
+  }
 });
