@@ -135,7 +135,7 @@ export interface Asset {
   status: string;
   accountId: string;
   categoryId: number;
-  contentType: string;
+  contentType?: string;
 }
 
 // Inbound report information

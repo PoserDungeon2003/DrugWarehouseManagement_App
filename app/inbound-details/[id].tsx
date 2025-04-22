@@ -5,7 +5,7 @@ import { formatVND } from "@/common/utils";
 import Loading from "@/components/Loading";
 import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
-import { InboundDetail } from "@/types";
+import { Asset, InboundDetail } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
@@ -78,7 +78,8 @@ export default function InboundDetails() {
 
   const handleComplete = async () => {
     try {
-      await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+      await api.put(`/api/Inbound/status`, {
+        inboundId: inbound?.inboundId,
         inboundStatus: InboundStatus.Completed
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -87,7 +88,7 @@ export default function InboundDetails() {
       setCompleteDialogVisible(false);
 
       queryClient.invalidateQueries({
-        queryKey: ['inbound', Number(id)]
+        queryKey: ['inbounds']
       });
 
       show({ message: 'Hoàn thành phiếu nhập thành công', type: 'success' });
@@ -102,7 +103,8 @@ export default function InboundDetails() {
 
   const handleCancel = async () => {
     try {
-      await api.put(`/api/Inbound/${inbound?.inboundId}`, {
+      await api.put(`/api/Inbound/status`, {
+        inboundId: inbound?.inboundId,
         inboundStatus: InboundStatus.Cancelled
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -111,7 +113,7 @@ export default function InboundDetails() {
       setCancelDialogVisible(false);
 
       queryClient.invalidateQueries({
-        queryKey: ['inbound', Number(id)]
+        queryKey: ['inbounds']
       });
 
       show({ message: 'Hủy phiếu nhập thành công', type: 'success' });
@@ -146,13 +148,15 @@ export default function InboundDetails() {
     router.push(`/create-inbound-reports/${id}`);
   };
 
-  const getImages = async (assetPath: string) => {
+  const getImages = async (assetPath: string): Promise<string | null> => {
     const filename = assetPath.split('/').pop() || '';
-
+  
     try {
       const response = await api.get(`/api/Asset/inbound-report/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob', // Add explicit responseType
       }) as any;
+      
       if (!response || !response.data) {
         console.error('No data in response');
         return null;
@@ -164,20 +168,77 @@ export default function InboundDetails() {
         return URL.createObjectURL(response.data);
       } else {
         // For native: convert blob to base64
-        // Note: We need to use FileReader which is available in React Native
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => { // Add explicit Promise type
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('FileReader result is not a string'));
+            }
+          };
           reader.onerror = reject;
           reader.readAsDataURL(response.data);
         });
       }
-  
     } catch (error) {
       console.error('Error fetching images:', error);
       return null;
     }
   }
+
+  const downloadImage = async (asset: Asset) => {
+    try {
+      // Show loading indicator
+      show({ message: 'Đang tải ảnh...', type: 'info' });
+      
+      // Get image data using existing getImages function
+      const imageData = await getImages(asset.fileUrl);
+      
+      if (!imageData) {
+        show({ message: 'Không thể tải ảnh', type: 'error' });
+        return;
+      }
+      
+      if (Platform.OS === 'web') {
+        // For web: Create an anchor element and trigger download
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = asset.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        show({ message: 'Tải ảnh thành công', type: 'success' });
+      } else {
+        // For native: Use Expo FileSystem to download and save
+        // First, need to convert the base64 URI to a file URI
+        // This requires expo-file-system package
+        const { FileSystem } = require('expo-file-system');
+        
+        // Get local directory for saving files
+        const fileUri = FileSystem.documentDirectory + asset.fileName;
+        
+        // Save the file
+        await FileSystem.writeAsStringAsync(
+          fileUri, 
+          imageData.split(',')[1], 
+          { encoding: FileSystem.EncodingType.Base64 }
+        );
+        
+        // Use Share API to let user choose what to do with the image
+        const { Share } = require('react-native');
+        await Share.share({
+          url: fileUri,
+          message: 'Image from DrugWarehouseManagement'
+        });
+        
+        show({ message: 'Ảnh đã được lưu', type: 'success' });
+      }
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      show({ message: 'Lỗi khi tải ảnh', type: 'error' });
+    }
+  };
 
   if (isLoading) {
     return (
