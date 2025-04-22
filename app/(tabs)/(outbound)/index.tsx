@@ -10,6 +10,7 @@ import { Button, Card, Chip, DataTable, Divider, IconButton, Modal, Portal, Sear
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SearchOutboundRequest } from "@/types";
 import { useGetCustomers } from "@/hooks/useCustomer";
+import Loading from "@/components/Loading";
 
 export default function Outbound() {
   const [page, setPage] = useState<number>(0);
@@ -307,9 +308,7 @@ export default function Outbound() {
             <DataTable.Title numeric>Trạng thái</DataTable.Title>
           </DataTable.Header>
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0000ff" />
-            </View>
+            <Loading />
           ) : (
             <>
               {_.isEmpty(filteredData) ? (

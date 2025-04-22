@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LotTransferStatus } from '@/common/enum';
 import theme from '@/theme';
+import Loading from '@/components/Loading';
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -99,11 +100,7 @@ export default function DashboardScreen() {
   const pendingTasksCount = pendingInbounds + pendingOutbounds + pendingTransfers;
   if (inboundLoading || outboundLoading || transferLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator
-          size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-      </View>
+      <Loading />
     );
   }
   return (

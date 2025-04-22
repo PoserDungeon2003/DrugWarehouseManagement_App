@@ -9,6 +9,7 @@ import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Te
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LotTransferQueryPaging } from "@/types";
 import { useGetLotTransfers } from "@/hooks/useLotTransfer";
+import Loading from "@/components/Loading";
 
 export default function LotTransfer() {
   const [page, setPage] = useState<number>(0);
@@ -85,191 +86,194 @@ export default function LotTransfer() {
   }, []);
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      }
-    >
-      <Card style={styles.filterCard}>
-        <Card.Content>
-          {/* Search Input */}
-          <Searchbar
-            placeholder="Tìm kiếm"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            style={styles.searchBar}
+    <>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
           />
-
-          {/* Date Filter Row */}
-          <View style={styles.dateFilterRow}>
-            <Button
-              mode="outlined"
-              onPress={() => setDatePickerVisible('from')}
-              icon="calendar"
-              style={styles.dateButton}
+        }
+      >
+        <Card style={styles.filterCard}>
+          <Card.Content>
+            {/* Search Input */}
+            <Searchbar
+              placeholder="Tìm kiếm"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchBar}
+            />
+            {/* Date Filter Row */}
+            <View style={styles.dateFilterRow}>
+              <Button
+                mode="outlined"
+                onPress={() => setDatePickerVisible('from')}
+                icon="calendar"
+                style={styles.dateButton}
+              >
+                {dateFrom ? format(dateFrom, 'dd/MM/yyyy') : 'Từ ngày'}
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => setDatePickerVisible('to')}
+                icon="calendar"
+                style={styles.dateButton}
+              >
+                {dateTo ? format(dateTo, 'dd/MM/yyyy') : 'Đến ngày'}
+              </Button>
+              {(dateFrom || dateTo) && (
+                <IconButton
+                  icon="close-circle"
+                  size={20}
+                  onPress={() => {
+                    setDateFrom(null);
+                    setDateTo(null);
+                  }}
+                />
+              )}
+            </View>
+            {/* Status Filter Chips */}
+            <View style={styles.statusFilterContainer}>
+              <Text style={styles.filterLabel}>Trạng thái:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.chipContainer}>
+                  {Object.entries(LOT_TRANSFER_STATUS_TEXT).map(([status, label]) => (
+                    <Chip
+                      key={status}
+                      selected={statusFilter === status}
+                      onPress={() => setStatusFilter(statusFilter === status ? null : status)}
+                      style={[
+                        styles.filterChip,
+                        statusFilter === status && {
+                          backgroundColor: LOT_TRANSFER_STATUS_COLOR[status]
+                        }
+                      ]}
+                      textStyle={statusFilter === status ? { color: 'white' } : {}}
+                    >
+                      {label}
+                    </Chip>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+            <View style={styles.additionalFilters}>
+              {(searchQuery || dateFrom || dateTo || statusFilter !== null) && (
+                <Button
+                  mode="text"
+                  onPress={resetFilters}
+                  icon="filter-remove"
+                  style={styles.resetButton}
+                >
+                  Xóa bộ lọc
+                </Button>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
+        {datePickerVisible && (
+          <Portal>
+            <Modal
+              visible={!!datePickerVisible}
+              onDismiss={() => setDatePickerVisible(null)}
+              contentContainerStyle={styles.modalContainer}
             >
-              {dateFrom ? format(dateFrom, 'dd/MM/yyyy') : 'Từ ngày'}
-            </Button>
-
-            <Button
-              mode="outlined"
-              onPress={() => setDatePickerVisible('to')}
-              icon="calendar"
-              style={styles.dateButton}
-            >
-              {dateTo ? format(dateTo, 'dd/MM/yyyy') : 'Đến ngày'}
-            </Button>
-
-            {(dateFrom || dateTo) && (
-              <IconButton
-                icon="close-circle"
-                size={20}
-                onPress={() => {
-                  setDateFrom(null);
-                  setDateTo(null);
+              <DateTimePicker
+                value={datePickerVisible === 'from' ? dateFrom || new Date() : dateTo || new Date()}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setDatePickerVisible(null);
+                  if (
+                    (event && event.type === 'set' && selectedDate) ||
+                    (event?.type === 'set' && selectedDate)
+                  ) {
+                    if (datePickerVisible === 'from') {
+                      setDateFrom(selectedDate);
+                    } else {
+                      setDateTo(selectedDate);
+                    }
+                  }
                 }}
               />
-            )}
-          </View>
-          {/* Status Filter Chips */}
-          <View style={styles.statusFilterContainer}>
-            <Text style={styles.filterLabel}>Trạng thái:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipContainer}>
-                {Object.entries(LOT_TRANSFER_STATUS_TEXT).map(([status, label]) => (
-                  <Chip
-                    key={status}
-                    selected={statusFilter === status}
-                    onPress={() => setStatusFilter(statusFilter === status ? null : status)}
-                    style={[
-                      styles.filterChip,
-                      statusFilter === status && {
-                        backgroundColor: LOT_TRANSFER_STATUS_COLOR[status]
-                      }
-                    ]}
-                    textStyle={statusFilter === status ? { color: 'white' } : {}}
-                  >
-                    {label}
-                  </Chip>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-          <View style={styles.additionalFilters}>
-            {(searchQuery || dateFrom || dateTo || statusFilter !== null) && (
-              <Button
-                mode="text"
-                onPress={resetFilters}
-                icon="filter-remove"
-                style={styles.resetButton}
-              >
-                Xóa bộ lọc
-              </Button>
-            )}
-          </View>
-        </Card.Content>
-      </Card>
-      {datePickerVisible && (
-        <Portal>
-          <Modal
-            visible={!!datePickerVisible}
-            onDismiss={() => setDatePickerVisible(null)}
-            contentContainerStyle={styles.modalContainer}
-          >
-            <DateTimePicker
-              value={datePickerVisible === 'from' ? dateFrom || new Date() : dateTo || new Date()}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setDatePickerVisible(null);
-                if (
-                  (event && event.type === 'set' && selectedDate) ||
-                  (event?.type === 'set' && selectedDate)
-                ) {
-                  if (datePickerVisible === 'from') {
-                    setDateFrom(selectedDate);
-                  } else {
-                    setDateTo(selectedDate);
-                  }
-                }
-              }}
-            />
-          </Modal>
-        </Portal>
-      )}
-      <Card style={styles.tableCard}>
-        <DataTable>
-          <DataTable.Header>
-            <DataTable.Title style={{ flex: 0.4 }}>ID</DataTable.Title>
-            <DataTable.Title style={{ flex: 0.9 }}>Từ kho</DataTable.Title>
-            <DataTable.Title style={{ flex: 0.9 }}>Đến kho</DataTable.Title>
-            <DataTable.Title style={{ flex: 0.7 }}>Ngày tạo</DataTable.Title>
-            <DataTable.Title style={{ flex: 1 }}>Trạng thái</DataTable.Title> {/* Increased from 0.6 to 1 */}
-          </DataTable.Header>
-
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0000ff" />
-            </View>
-          ) : (
-            <>
-              {_.isEmpty(filteredData) ? (
-                <Text style={styles.emptyMessage}>Không có kết quả nào</Text>
-              ) : (
-                <>
-                  {filteredData.map((item) => (
-                    <DataTable.Row
-                      key={item.lotTransferId}
-                      onPress={() => router.push(`/lot-transfer-details/${item.lotTransferId}`)}
-                      style={styles.dataRow}
-                    >
-                      <DataTable.Cell style={{ flex: 0.4 }}>{item.lotTransferId}</DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 1 }}>{item.fromWareHouse}</DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 1 }}>{item.toWareHouse}</DataTable.Cell>
-                      <DataTable.Cell style={{ flex: 1 }}>
-                        {format(new Date(item.createdAt), 'dd/MM/yyyy')}
-                      </DataTable.Cell>
-                      <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
-                        <View
-                          style={{
-                            backgroundColor: LOT_TRANSFER_STATUS_COLOR[item.lotTransferStatus.toLowerCase()],
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 4,
-                            alignItems: 'center',
-                            minWidth: 80,
-                          }}
-                        >
-                          <Text style={{ color: 'white', fontWeight: '500', fontSize: 12 }}>
-                            {LOT_TRANSFER_STATUS_TEXT[item.lotTransferStatus.toLowerCase()]}
+            </Modal>
+          </Portal>
+        )}
+        <Card style={styles.tableCard}>
+          <DataTable>
+            <DataTable.Header>
+              <DataTable.Title style={{ flex: 0.4 }}>ID</DataTable.Title>
+              <DataTable.Title style={{ flex: 0.9 }}>Từ kho</DataTable.Title>
+              <DataTable.Title style={{ flex: 0.9 }}>Đến kho</DataTable.Title>
+              <DataTable.Title style={{ flex: 0.7 }}>Ngày tạo</DataTable.Title>
+              <DataTable.Title style={{ flex: 1 }}>Trạng thái</DataTable.Title>
+            </DataTable.Header>
+            {isLoading ? (
+              <Loading />
+            ) : (
+              <>
+                {_.isEmpty(filteredData) ? (
+                  <Text style={styles.emptyMessage}>Không có kết quả nào</Text>
+                ) : (
+                  <>
+                    {filteredData.map((item, index) => (
+                      <DataTable.Row
+                        key={index}
+                        onPress={() => router.push(`/lot-transfer-details/${item.lotTransferId}`)}
+                        style={styles.dataRow}
+                      >
+                        <DataTable.Cell style={{ flex: 0.4 }}>
+                          <Text>{item.lotTransferId}</Text>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={{ flex: 1 }}>
+                          <Text>{item.fromWareHouse}</Text>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={{ flex: 1 }}>
+                          <Text>{item.toWareHouse}</Text>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={{ flex: 1 }}>
+                          <Text>
+                            {format(new Date(item.createdAt), 'dd/MM/yyyy')}
                           </Text>
-                        </View>
-                      </DataTable.Cell>
-                    </DataTable.Row>
-                  ))}
-                </>
-              )}
-            </>
-          )}
-
-          <DataTable.Pagination
-            page={page}
-            numberOfPages={data?.totalPages || 0}
-            onPageChange={handlePageChange}
-            label={`${from + 1}-${to} của ${data?.totalCount || 0}`}
-            numberOfItemsPerPageList={numberOfItemsPerPageList}
-            numberOfItemsPerPage={itemsPerPage}
-            onItemsPerPageChange={handleItemsPerPageChange}
-            selectPageDropdownLabel={'Hàng mỗi trang'}
-            showFastPaginationControls
-          />
-        </DataTable>
-      </Card>
-    </ScrollView>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={{ justifyContent: 'flex-end' }}>
+                          <View
+                            style={{
+                              backgroundColor: LOT_TRANSFER_STATUS_COLOR[item.lotTransferStatus.toLowerCase()],
+                              paddingHorizontal: 10,
+                              paddingVertical: 6,
+                              borderRadius: 4,
+                              alignItems: 'center',
+                              minWidth: 80,
+                            }}
+                          >
+                            <Text style={{ color: 'white', fontWeight: '500', fontSize: 12 }}>
+                              {LOT_TRANSFER_STATUS_TEXT[item.lotTransferStatus.toLowerCase()]}
+                            </Text>
+                          </View>
+                        </DataTable.Cell>
+                      </DataTable.Row>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+            <DataTable.Pagination
+              page={page}
+              numberOfPages={data?.totalPages || 0}
+              onPageChange={handlePageChange}
+              label={`${from + 1}-${to} của ${data?.totalCount || 0}`}
+              numberOfItemsPerPageList={numberOfItemsPerPageList}
+              numberOfItemsPerPage={itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              selectPageDropdownLabel={'Hàng mỗi trang'}
+              showFastPaginationControls
+            />
+          </DataTable>
+        </Card>
+      </ScrollView>
+    </>
   );
 }
 

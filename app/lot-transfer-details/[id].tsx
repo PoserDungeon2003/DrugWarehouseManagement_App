@@ -2,6 +2,7 @@ import api from "@/api";
 import { LOT_TRANSFER_STATUS_TEXT, OUTBOUND_STATUS_COLOR, OUTBOUND_STATUS_TEXT } from "@/common/const";
 import { LotTransferStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
+import Loading from "@/components/Loading";
 import { useGetLotTransferById } from "@/hooks/useLotTransfer";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
@@ -122,9 +123,7 @@ export default function LotTransferDetails() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <Loading />
     );
   }
   return (

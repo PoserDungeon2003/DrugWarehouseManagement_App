@@ -13,6 +13,7 @@ import { InboundStatus } from "@/common/enum";
 import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import Loading from "@/components/Loading";
 
 type ImageAsset = {
   uri: string;
@@ -156,10 +157,10 @@ export default function CreateInboundReport() {
             images.forEach(image => {
               const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
               let originalName = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
-    
+
               const encodedName = encodeURIComponent(originalName);
               const type = image.type || 'image/jpeg';
-          
+
               formData.append('Images', {
                 uri,
                 type,
@@ -228,10 +229,10 @@ export default function CreateInboundReport() {
             images.forEach(image => {
               const uri = Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri;
               let originalName = image.name || uri.split('/').pop() || `image-${Date.now()}.jpg`;
-    
+
               const encodedName = encodeURIComponent(originalName);
               const type = image.type || 'image/jpeg';
-          
+
               formData.append('Images', {
                 uri,
                 type,
@@ -303,10 +304,7 @@ export default function CreateInboundReport() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={{ marginTop: 16 }}>Đang tải thông tin...</Text>
-      </View>
+      <Loading />
     );
   }
 

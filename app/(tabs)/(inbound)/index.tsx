@@ -9,6 +9,7 @@ import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Text, ActivityIndicator } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetInbounds } from "@/hooks/useInbound";
+import Loading from "@/components/Loading";
 
 export function parseInboundStatus(status: string): InboundStatus {
   switch (status.toLowerCase()) {
@@ -246,9 +247,7 @@ export default function Outbound() {
           </DataTable.Header>
 
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0000ff" />
-            </View>
+            <Loading />
           ) : (
             <>
               {data?.items.length === 0 ? (

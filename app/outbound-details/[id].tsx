@@ -2,6 +2,7 @@ import api from "@/api";
 import { OUTBOUND_STATUS_TEXT } from "@/common/const";
 import { OutboundStatus } from "@/common/enum";
 import { formatVND } from "@/common/utils";
+import Loading from "@/components/Loading";
 import { useGetOutboundById } from "@/hooks/useOutbound";
 import { useGetUser } from "@/hooks/useUser";
 import { OutboundDetail } from "@/types";
@@ -132,9 +133,7 @@ export default function OutboundDetails() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <Loading />
     );
   }
   return (
