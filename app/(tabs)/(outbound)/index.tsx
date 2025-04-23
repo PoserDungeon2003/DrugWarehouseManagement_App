@@ -69,6 +69,8 @@ export default function Outbound() {
       setSearchCustomerQuery(customerSearchInput);
     }, 400);
 
+    setPage(0);
+
     handler();
 
     return () => {

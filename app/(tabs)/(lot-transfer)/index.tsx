@@ -45,6 +45,8 @@ export default function LotTransfer() {
       });
     }, 500);
 
+    setPage(0);
+
     handler();
 
     return () => {

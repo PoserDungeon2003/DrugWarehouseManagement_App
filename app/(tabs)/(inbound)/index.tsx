@@ -3,7 +3,7 @@ import { InboundStatus } from "@/common/enum";
 import { useGetUser } from "@/hooks/useUser";
 import { format } from "date-fns";
 import { router } from "expo-router";
-import _ from "lodash";
+import _, { set } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, View, StyleSheet, RefreshControl } from "react-native";
 import { Button, Card, Chip, DataTable, IconButton, Modal, Portal, Searchbar, Text, ActivityIndicator } from "react-native-paper";
@@ -62,6 +62,8 @@ export default function Outbound() {
       inboundStatus: statusFilter || undefined,
       isReportPendingExist: showReportPending,
     };
+
+    setPage(0);
 
     debouncedSetQueryParams(newParams);
 

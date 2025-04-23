@@ -21,19 +21,19 @@ export default function DashboardScreen() {
   const { data: profile } = useGetProfile(token || '');
   const { data: inboundData, isLoading: inboundLoading, refetch: refetchInbound } = useGetInbounds(token || "", {
     page: 1,
-    pageSize: 5,
+    pageSize: 100,
     inboundStatus: 'pending',
   });
 
   const { data: outboundData, isLoading: outboundLoading, refetch: refetchOutbound } = useGetOutbound(token || "", {
     page: 1,
-    pageSize: 5,
+    pageSize: 100,
     status: "pending"
   });
 
   const { data: transferData, isLoading: transferLoading, refetch: refetchLotTransfer } = useGetLotTransfers(token || "", {
     page: 1,
-    pageSize: 5,
+    pageSize: 100,
     status: LotTransferStatus.Pending.toString(),
   });
 
