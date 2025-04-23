@@ -28,7 +28,7 @@ export default function Outbound() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
-  const [statusFilter, setStatusFilter] = useState<InboundStatus | null>(null);
+  const [statusFilter, setStatusFilter] = useState<InboundStatus | null>(InboundStatus.Pending);
   const [datePickerVisible, setDatePickerVisible] = useState<'from' | 'to' | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showReportPending, setShowReportPending] = useState(false);
@@ -41,7 +41,7 @@ export default function Outbound() {
     search: '',
     dateFrom: undefined as string | undefined,
     dateTo: undefined as string | undefined,
-    inboundStatus: undefined as InboundStatus | undefined,
+    inboundStatus: InboundStatus.Pending as InboundStatus | undefined,
     isReportPendingExist: false,
   });
 

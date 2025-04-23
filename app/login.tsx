@@ -7,12 +7,13 @@ import { object, string, InferType } from 'yup';
 import { Controller, useForm } from "react-hook-form";
 import { LoginResponse } from "@/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import theme from "@/theme";
 import api from "@/api";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
+import { ACCESS_TOKEN_KEY, clearTokens, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "react-native-paper-toast";
+import { useEffect } from "react";
 
 const schema = object({
   username: string().required('Tên người dùng là bắt buộc').trim(),
@@ -23,6 +24,8 @@ export type LoginType = InferType<typeof schema>;
 
 export default function LoginScreen() {
   const queryClient = useQueryClient();
+  const params = useLocalSearchParams();
+
   const { handleSubmit, control, setError, formState: { errors, isSubmitting } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
@@ -32,6 +35,16 @@ export default function LoginScreen() {
     }
   })
   const { show } = useToast();
+
+  useEffect(() => {
+    if (params?.message) {
+      show({
+        message: params?.message as string,
+        type: 'info',
+        duration: 3500,
+      })
+    }
+  }, [params.message])
 
   const onSubmit = async (data: LoginType) => {
     try {
