@@ -72,11 +72,11 @@ function RootLayoutNav() {
   const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {
-    if ((isError && error.message.includes("Unauthorized"))) {
-      router.replace('/login');
-      Promise.resolve(clearTokens());
+    if (!token || token.length === 0) {
+      router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`); // Redirect to login page
+      Promise.resolve(async () => await clearTokens());
     }
-  }, [isError, error]);
+  }, [token]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>

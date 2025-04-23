@@ -74,6 +74,7 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         await clearTokens(); // Optional: log user out
         router.replace(`/login?message=${encodeURIComponent(`Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại`)}`); // Redirect to login page
+        router.reload();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
