@@ -14,6 +14,7 @@ import { useCallback, useState } from "react";
 import { ScrollView, View, StyleSheet, Linking, RefreshControl, Platform, Image } from "react-native";
 import { ActivityIndicator, Badge, Button, Card, DataTable, Dialog, Divider, IconButton, Modal, Portal, Text } from "react-native-paper";
 import { useToast } from "react-native-paper-toast";
+import * as FileSystem from 'expo-file-system';
 
 export default function InboundDetails() {
   const { id } = useLocalSearchParams();
@@ -163,48 +164,54 @@ export default function InboundDetails() {
         responseType: responseType,
       }) as any;
 
-      if (!response) {
+      if (!response || !response.data) {
         console.error('No data in response');
         return null;
       }
 
       if (Platform.OS === 'web') {
         // For web: create object URL directly from the blob response
-        // This avoids unnecessary conversion
-        return URL.createObjectURL(response);
+        return URL.createObjectURL(response.data);
       } else {
-        // For native: get the file URI using expo-file-system
-        const { FileSystem } = require('expo-file-system');
-
+        // For native: properly use FileSystem (now imported at the top)
         // Create a temporary file path
         const tempFilePath = `${FileSystem.cacheDirectory}${filename}`;
 
-        // Convert blob to base64 for storage (minimal conversion needed)
-        const reader = new FileReader();
+        // Convert blob to base64 string
         return new Promise((resolve, reject) => {
-          reader.onload = async () => {
-            // The result is a base64 string
-            const base64Data = reader.result?.toString().split(',')[1];
+          const fileReader = new FileReader();
+          fileReader.onload = async () => {
+            try {
+              // The result is a base64 string
+              const base64Data = fileReader.result?.toString().split(',')[1];
 
-            // Write the file to temporary storage
-            await FileSystem.writeAsStringAsync(
-              tempFilePath,
-              base64Data,
-              { encoding: FileSystem.EncodingType.Base64 }
-            );
+              if (!base64Data) {
+                reject(new Error('Failed to convert image data'));
+                return;
+              }
 
-            // Return the file URI that can be used directly by Image component
-            resolve(tempFilePath);
+              // Write the file to temporary storage
+              await FileSystem.writeAsStringAsync(
+                tempFilePath,
+                base64Data,
+                { encoding: FileSystem.EncodingType.Base64 }
+              );
+
+              // Return the file URI
+              resolve(tempFilePath);
+            } catch (error) {
+              reject(error);
+            }
           };
-          reader.onerror = () => reject(new Error('Failed to read blob'));
-          reader.readAsDataURL(response.data);
+          fileReader.onerror = () => reject(new Error('Failed to read blob'));
+          fileReader.readAsDataURL(response.data);
         });
       }
     } catch (error) {
       console.error('Error fetching images:', error);
       return null;
     }
-  }
+  };
 
   const previewImage = async (asset: Asset) => {
     setPreviewLoading(true);
@@ -259,7 +266,7 @@ export default function InboundDetails() {
       show({ message: 'Lỗi khi tải ảnh', type: 'error' });
     }
   };
-  
+
   if (isLoading) {
     return (
       <Loading />
@@ -493,10 +500,7 @@ export default function InboundDetails() {
                           style={styles.attachmentButton}
                           contentStyle={styles.attachmentButtonContent}
                           labelStyle={styles.attachmentButtonLabel}
-                          onPress={() => asset.contentType?.startsWith('image/')
-                            ? previewImage(asset)
-                            : Linking.openURL(asset.fileUrl)
-                          }
+                          onPress={() => previewImage(asset)}
                         >
                           {asset.fileName.length > 15
                             ? asset.fileName.substring(0, 12) + '...'
