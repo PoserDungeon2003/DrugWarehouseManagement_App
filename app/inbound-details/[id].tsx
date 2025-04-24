@@ -1,7 +1,7 @@
 import api from "@/api";
 import { INBOUND_STATUS_TEXT } from "@/common/const";
 import { InboundStatus } from "@/common/enum";
-import { formatVND } from "@/common/utils";
+import { arrayBufferToBase64, formatVND } from "@/common/utils";
 import Loading from "@/components/Loading";
 import { useGetInboundById } from "@/hooks/useInbound";
 import { useGetUser } from "@/hooks/useUser";
@@ -156,8 +156,8 @@ export default function InboundDetails() {
     const filename = assetPath.split('/').pop() || '';
 
     try {
-      // Set proper responseType for direct handling
-      const responseType = 'blob';
+      // Use arraybuffer for Android to avoid blob issues
+      const responseType = Platform.OS === 'web' ? 'blob' : 'arraybuffer';
 
       const response = await api.get(`/api/Asset/inbound-report/${encodeURIComponent(filename)}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -173,39 +173,21 @@ export default function InboundDetails() {
         // For web: create object URL directly from the blob response
         return URL.createObjectURL(response.data);
       } else {
-        // For native: properly use FileSystem (now imported at the top)
+        // For Android: convert ArrayBuffer to base64 directly
+        const base64Data = arrayBufferToBase64(response.data);
+
         // Create a temporary file path
         const tempFilePath = `${FileSystem.cacheDirectory}${filename}`;
 
-        // Convert blob to base64 string
-        return new Promise((resolve, reject) => {
-          const fileReader = new FileReader();
-          fileReader.onload = async () => {
-            try {
-              // The result is a base64 string
-              const base64Data = fileReader.result?.toString().split(',')[1];
+        // Write the file to temporary storage
+        await FileSystem.writeAsStringAsync(
+          tempFilePath,
+          base64Data,
+          { encoding: FileSystem.EncodingType.Base64 }
+        );
 
-              if (!base64Data) {
-                reject(new Error('Failed to convert image data'));
-                return;
-              }
-
-              // Write the file to temporary storage
-              await FileSystem.writeAsStringAsync(
-                tempFilePath,
-                base64Data,
-                { encoding: FileSystem.EncodingType.Base64 }
-              );
-
-              // Return the file URI
-              resolve(tempFilePath);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          fileReader.onerror = () => reject(new Error('Failed to read blob'));
-          fileReader.readAsDataURL(response.data);
-        });
+        // Return the file URI
+        return tempFilePath;
       }
     } catch (error) {
       console.error('Error fetching images:', error);
