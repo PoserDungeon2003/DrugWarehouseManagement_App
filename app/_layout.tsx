@@ -72,11 +72,11 @@ function RootLayoutNav() {
   const { data: profile, isError, error } = useGetProfile(token || '');
 
   useEffect(() => {
-    if (!token || token.length === 0) {
+    if ((!token || token.length === 0 && !profile)) {
       router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`); // Redirect to login page
       Promise.resolve(async () => await clearTokens());
     }
-  }, [token]);
+  }, [profile]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
