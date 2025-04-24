@@ -71,12 +71,12 @@ function RootLayoutNav() {
   const token = user.data?.token; // Access token
   const { data: profile, isError, error } = useGetProfile(token || '');
 
-  useEffect(() => {
-    if ((!token || token.length === 0 && !profile)) {
-      router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`); // Redirect to login page
-      Promise.resolve(async () => await clearTokens());
-    }
-  }, [profile]);
+  // useEffect(() => {
+  //   if ((!token || token.length === 0 && !profile)) {
+  //     router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`); // Redirect to login page
+  //     Promise.resolve(async () => await clearTokens());
+  //   }
+  // }, [profile]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
@@ -102,6 +102,9 @@ function RootLayoutNav() {
               }} />
               <Stack.Screen name='lot-transfer-details/[id]' options={{
                 title: 'Chi tiết phiếu chuyển kho',
+              }} />
+              <Stack.Screen name='create-inbound-reports/[id]' options={{
+                title: 'Chi tiết báo cáo nhập kho',
               }} />
             </Stack>
           </ToastProvider>
