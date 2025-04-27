@@ -18,7 +18,7 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // Create an Axios instance
 const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || "https://api.warehouse.utilitiestech.online",
+  baseURL: process.env.EXPO_PUBLIC_API_URL || "https://api.drugwarehouse.egoflask.store",
   timeout: 60 * 1000,
   headers: {
     'Content-Type': 'application/json',
