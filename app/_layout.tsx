@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { router, Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 
@@ -69,14 +69,16 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const user = useGetUser();
   const token = user.data?.token; // Access token
-  const { data: profile, isError, error } = useGetProfile(token || '');
+  const { data: profile, isError, error, isLoading } = useGetProfile(token || '');
+  const router = useRouter();
 
-  // useEffect(() => {
-  //   if ((!token || token.length === 0 && !profile)) {
-  //     router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`); // Redirect to login page
-  //     Promise.resolve(async () => await clearTokens());
-  //   }
-  // }, [profile]);
+  const isAuthenticated = token && token !== ""
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`);
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
@@ -86,7 +88,7 @@ function RootLayoutNav() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{
-                title: 'Login',
+                title: 'Đăng nhập',
                 headerShown: false,
               }}
               />
