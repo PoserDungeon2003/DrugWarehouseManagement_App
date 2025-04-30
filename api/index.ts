@@ -31,18 +31,18 @@ apiClient.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 409) {
-      await clearTokens();
+    // if (error.response?.status === 409) {
+    //   await clearTokens();
       
-      // Reset axios instance state
-      isRefreshing = false;
-      failedQueue = [];
+    //   // Reset axios instance state
+    //   isRefreshing = false;
+    //   failedQueue = [];
       
-      // Use replace instead of navigate to clear history
-      router.replace(`/login?message=${encodeURIComponent(`Đã đăng xuất do tài khoản đã được đăng nhập ở nơi khác`)}`);
-      router.reload();
-      return Promise.reject(error);
-    }
+    //   // Use replace instead of navigate to clear history
+    //   router.replace(`/login?message=${encodeURIComponent(`Đã đăng xuất do tài khoản đã được đăng nhập ở nơi khác`)}`);
+    //   router.reload();
+    //   return Promise.reject(error);
+    // }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

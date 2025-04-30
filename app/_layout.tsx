@@ -72,13 +72,13 @@ function RootLayoutNav() {
   const { data: profile, isError, error, isLoading } = useGetProfile(token || '');
   const router = useRouter();
 
-  const isAuthenticated = token && token !== ""
+  // const isAuthenticated = token && token !== ""
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`);
-    }
-  }, [isLoading, isAuthenticated, router]);
+  // useEffect(() => {
+  //   if (!isLoading && !isAuthenticated) {
+  //     router.replace(`/login?message=${encodeURIComponent(`Vui lòng đăng nhập`)}`);
+  //   }
+  // }, [isLoading, isAuthenticated, router]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
