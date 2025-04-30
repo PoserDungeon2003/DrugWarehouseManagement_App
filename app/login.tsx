@@ -7,22 +7,26 @@ import { object, string, InferType } from 'yup';
 import { Controller, useForm } from "react-hook-form";
 import { LoginResponse } from "@/types";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import theme from "@/theme";
 import api from "@/api";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
+import { ACCESS_TOKEN_KEY, clearTokens, REFRESH_TOKEN_KEY } from "@/auth/authStorage";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "react-native-paper-toast";
+import { useEffect } from "react";
 
 const schema = object({
-  username: string().required('Tên người dùng là bắt buộc'),
-  password: string().required('Mật khẩu là bắt buộc'),
+  username: string().required('Tên người dùng là bắt buộc').trim(),
+  password: string().required('Mật khẩu là bắt buộc').trim(),
 })
 
 export type LoginType = InferType<typeof schema>;
 
 export default function LoginScreen() {
   const queryClient = useQueryClient();
-  const { handleSubmit, control, setError, formState: { errors, isLoading } } = useForm<LoginType>({
+  const params = useLocalSearchParams();
+
+  const { handleSubmit, control, setError, formState: { errors, isSubmitting } } = useForm<LoginType>({
     mode: 'onChange',
     resolver: yupResolver(schema),
     defaultValues: {
@@ -30,6 +34,17 @@ export default function LoginScreen() {
       password: '',
     }
   })
+  const { show } = useToast();
+
+  useEffect(() => {
+    if (params?.message) {
+      show({
+        message: params?.message as string,
+        type: 'info',
+        duration: 3500,
+      })
+    }
+  }, [params.message])
 
   const onSubmit = async (data: LoginType) => {
     try {
@@ -44,13 +59,20 @@ export default function LoginScreen() {
           [REFRESH_TOKEN_KEY, refreshToken],
           ['role', role],
         ])
+        show({
+          message: 'Đăng nhập thành công',
+          duration: 2000,
+          type: 'success',
+        })
         queryClient.resetQueries();
         router.push('/')
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setError('root', {
-        message: error?.response?.data?.message || 'Đăng nhập không thành công',
+      show({
+        message: error?.response?.data?.message || 'Đăng nhập thất bại',
+        duration: 2000,
+        type: 'error',
       })
     }
   }
@@ -68,7 +90,7 @@ export default function LoginScreen() {
       }}>
         Phần mềm quản lý kho thuốc
       </Text>
-      <View>
+      <View style={styles.formContainer}>
         <Controller
           control={control}
           name="username"
@@ -109,7 +131,8 @@ export default function LoginScreen() {
           style={buttonStyles.button}
           labelStyle={buttonStyles.text}
           mode="contained"
-          loading={isLoading}
+          loading={isSubmitting}
+          disabled={isSubmitting}
           onPress={handleSubmit(onSubmit)}
         >
           Đăng nhập
@@ -175,6 +198,7 @@ const TextInput = ({ errorText, description, ...props }: TextInputProps) => {
         mode="outlined"
         outlineColor={theme.colors.primary}
         activeOutlineColor={theme.colors.primary}
+        contentStyle={textInputStyles.contentStyle}
         {...props}
       />
       {description && !errorText ? (
@@ -191,7 +215,16 @@ const textInputStyles = StyleSheet.create({
     marginVertical: 12,
   },
   input: {
-    // backgroundColor: theme.colors.surface,
+    width: '100%',
+    fontSize: 18, // Increased for better readability
+    backgroundColor: theme.colors.surface,
+    height: 56, // Explicit height helps with consistency
+  },
+  contentStyle: {
+    paddingVertical: 12,
+    paddingHorizontal: 16, // Add horizontal padding
+    fontSize: 18,
+    minHeight: 56, // Match height
   },
   description: {
     fontSize: 13,
@@ -204,3 +237,12 @@ const textInputStyles = StyleSheet.create({
     paddingTop: 8,
   },
 })
+
+const styles = StyleSheet.create({
+  formContainer: {
+    width: '100%',
+    maxWidth: 400, // Prevents it from getting too wide on tablets
+    alignSelf: 'stretch', // Takes up available width
+    paddingHorizontal: 20, // Prevents inputs from touching screen edges
+  },
+});

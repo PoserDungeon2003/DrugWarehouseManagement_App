@@ -29,8 +29,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Nhập kho',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Bảng điều khiển',
+          tabBarIcon: ({ color }) => <TabBarIcon name="dashboard" color={color} />,
           headerRight: () => (
             <Link href="/profile" asChild>
               <Pressable>
@@ -48,10 +48,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="outbound"
+        name="(inbound)/index"
+        options={{
+          title: 'Nhập kho',
+          tabBarIcon: ({ color }) => <TabBarIcon name="arrow-down" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="(outbound)/index"
         options={{
           title: 'Xuất kho',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="arrow-up" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="(lot-transfer)/index"
+        options={{
+          title: 'Chuyển kho',
+          tabBarIcon: ({ color }) => <TabBarIcon name="exchange" color={color} />,
         }}
       />
     </Tabs>

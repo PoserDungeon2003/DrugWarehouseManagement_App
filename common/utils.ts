@@ -29,3 +29,53 @@ export function buildQueryString<T extends Partial<QueryPaging>>(params: T): str
 
   return queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
 }
+
+export function formatVND(
+  amount: number | null | undefined, 
+  options: {
+    showSymbol?: boolean;
+    symbolPosition?: 'before' | 'after';
+    decimalPlaces?: number;
+    fallback?: string;
+  } = {}
+): string {
+  // Default options
+  const {
+    showSymbol = true,
+    symbolPosition = 'after',
+    decimalPlaces = 0,
+    fallback = '0 ₫'
+  } = options;
+
+  // Handle null, undefined, or NaN
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return fallback;
+  }
+
+  // Format the number with Vietnamese locale
+  const formatted = amount.toLocaleString('vi-VN', {
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  });
+
+  // Add currency symbol based on position preference
+  if (showSymbol) {
+    return symbolPosition === 'before' 
+      ? `₫ ${formatted}` 
+      : `${formatted} ₫`;
+  }
+
+  return formatted;
+}
+
+export const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  
+  return btoa(binary);
+};

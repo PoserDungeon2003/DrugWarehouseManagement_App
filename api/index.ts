@@ -18,7 +18,7 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // Create an Axios instance
 const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || "http://poserdungeon.myddns.me:5001",
+  baseURL: process.env.EXPO_PUBLIC_API_URL || "https://api.drugwarehouse.egoflask.store",
   timeout: 60 * 1000,
   headers: {
     'Content-Type': 'application/json',
@@ -30,6 +30,19 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async error => {
     const originalRequest = error.config;
+
+    // if (error.response?.status === 409) {
+    //   await clearTokens();
+      
+    //   // Reset axios instance state
+    //   isRefreshing = false;
+    //   failedQueue = [];
+      
+    //   // Use replace instead of navigate to clear history
+    //   router.replace(`/login?message=${encodeURIComponent(`Đã đăng xuất do tài khoản đã được đăng nhập ở nơi khác`)}`);
+    //   router.reload();
+    //   return Promise.reject(error);
+    // }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -60,7 +73,8 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         await clearTokens(); // Optional: log user out
-        router.navigate('/login'); // Redirect to login page
+        router.replace(`/login?message=${encodeURIComponent(`Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại`)}`); // Redirect to login page
+        router.reload();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -2,17 +2,18 @@ import { ImageBackground, KeyboardAvoidingView, StyleSheet } from "react-native"
 
 export default function Background({ children }: { children: React.ReactNode }) {
   return (
-    <ImageBackground
-      source={{
-        uri: require('@/assets/images/backgrounds/background_dot.png'),
-      }}
-      resizeMode="repeat"
-      style={styles.background}
-    >
-      <KeyboardAvoidingView style={styles.container} behavior="padding">
-        {children}
-      </KeyboardAvoidingView>
-    </ImageBackground>
+    // <ImageBackground
+    //   source={{
+    //     uri: require('../assets/images/backgrounds/background_dot.png'),
+    //   }}
+    //   resizeMode="repeat"
+    //   style={styles.background}
+    // >
+
+    // </ImageBackground>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
+      {children}
+    </KeyboardAvoidingView>
   );
 }
 const styles = StyleSheet.create({
